@@ -1,3 +1,9 @@
+# Account structure
+TODO
+
+# Message format
+TODO
+
 # Setup
 
 0. Setup ImmuDB https://docs.immudb.io/0.9.2/quickstart.html

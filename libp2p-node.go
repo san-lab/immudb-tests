@@ -24,13 +24,6 @@ type Node struct {
 	self  peer.ID
 }
 
-// MPCMessage gets converted to/from JSON and sent in the body of pubsub messages.
-type TxMessage struct {
-	UserFrom string
-	Amount   string
-	UserTo   string
-}
-
 // readLoop pulls messages from the pubsub topic and pushes them onto the Messages channel.
 func (node *Node) readLoop() {
 	for {
@@ -49,16 +42,16 @@ func (node *Node) readLoop() {
 }
 
 func (node *Node) ProcessMessage(msg *pubsub.Message) {
-	txmsg := new(TxMessage)
+	txmsg := new(MT103Message)
 	err := json.Unmarshal(msg.Data, txmsg)
 	if err != nil {
-		fmt.Println("Bad frame:", err)
+		fmt.Println("bad frame:", err)
 		return
 	}
-	ProcessInterBankTx(txmsg.Amount, txmsg.UserTo)
+	ProcessInterBankTx(txmsg)
 }
 
-func (node *Node) SendMsg(txmsg *TxMessage) {
+func (node *Node) SendMsg(txmsg *MT103Message) {
 	b, _ := json.Marshal(txmsg)
 	node.topic.Publish(context.Background(), b)
 }
