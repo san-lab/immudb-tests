@@ -66,11 +66,13 @@ func TopUI() {
 			amount, _ := pr.Run()
 			pr = promptui.Prompt{Label: "Introduce the recipient of the transaction", Default: "test_userTo"}
 			userTo, _ := pr.Run()
+			// Substitute by discoveredCounterpartBanks
+			prompt := promptui.Select{
+				Label: "Select the bank of the recipient of the transaction",
+				Items: CounterpartBanks,
+			}
 
-			// TODO add a prompt to select from a list of banks
-			// CounterpartBanks
-			pr = promptui.Prompt{Label: "Introduce the institution recipient of the transaction", Default: "test_bankTo"}
-			bankTo, _ := pr.Run()
+			_, bankTo, _ := prompt.Run()
 
 			err := InterBankTx(userFrom, amount, userTo, bankTo)
 			if err != nil {
