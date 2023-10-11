@@ -95,21 +95,18 @@ func TopUI() {
 			fmt.Printf("Current state root: 0x%x (last tx id: %d)", root, txId)
 
 		case printAllAccounts:
-			entries, _ := GetAllAccounts()
-			for _, entry := range entries.Entries {
-				fmt.Printf("(%s : %s)\n", entry.Key, entry.Value)
-			}
+			accounts, _ := GetAllAccounts()
+			PrintAllAccounts(accounts)
 
 		case printAccount:
 			pr := promptui.Prompt{Label: "Introduce the IBAN of the new account", Default: "test_IBAN"}
 			userIban, _ := pr.Run()
 
-			err := PrintAccount(userIban)
+			account, err := GetAccount(userIban)
 			if err != nil {
 				fmt.Println(err)
 			}
-			//entry, _ := VerifiedGet(userIban)
-			//fmt.Printf("('%s', '%s') @ tx %d\n", entry.Key, entry.Value, entry.Tx)
+			PrintAccount(account, true)
 
 		case txById:
 			pr := promptui.Prompt{Label: "Introduce the ID of the transaction", Default: "0"}
@@ -163,7 +160,7 @@ func TopUI() {
 }
 
 func ManageAccountUI(userIban string) {
-	items := []string{createAccount, setAccountBalance, depositToAccount, withdrawFromAccount, suspendAccount, unsuspendAccount}
+	items := []string{createAccount, printAccount, setAccountBalance, depositToAccount, withdrawFromAccount, suspendAccount, unsuspendAccount}
 
 	items = append(items, UP)
 	prompt := promptui.Select{
@@ -182,6 +179,13 @@ func ManageAccountUI(userIban string) {
 		if err != nil {
 			fmt.Println(err)
 		}
+
+	case printAccount:
+		account, err := GetAccount(userIban)
+		if err != nil {
+			fmt.Println(err)
+		}
+		PrintAccount(account, true)
 
 	case setAccountBalance:
 		pr := promptui.Prompt{Label: "Introduce the new balance of the account", Default: "1"}

@@ -110,13 +110,29 @@ func WithdrawFromAccount(userIban, amountString string) error {
 	return err
 }
 
-func PrintAccount(userIban string) error {
+func GetAccount(userIban string) (*Account, error) {
 	accountState, err := GetAndDeserializeAccount(userIban)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	PrintDetails(accountState)
-	return nil
+	return accountState, nil
+}
+
+func GetAllAccounts() ([]*Account, error) {
+	entries, err := GetAllEntries()
+	if err != nil {
+		return nil, err
+	}
+	accounts := []*Account{}
+	for _, entry := range entries.Entries {
+		accountState := new(Account)
+		err := json.Unmarshal(entry.Value, accountState)
+		if err != nil {
+			return accounts, err
+		}
+		accounts = append(accounts, accountState)
+	}
+	return accounts, nil
 }
 
 func GetAndDeserializeAccount(key string) (*Account, error) {
@@ -164,11 +180,23 @@ func AnswerBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 }
 
 func ProcessBankDiscoveryAnswer(discoveryAnswer *BankDiscoveryAnswer) error {
-	CounterpartBanks = append(CounterpartBanks, discoveryAnswer.MyBankName)
+	if !contains(CounterpartBanks, discoveryAnswer.MyBankName) && discoveryAnswer.MyBankName != InstitutionName {
+		CounterpartBanks = append(CounterpartBanks, discoveryAnswer.MyBankName)
+	}
 	return nil
 }
 
-// TODO
+func contains(list []string, elem string) bool {
+	for _, a := range list {
+		if a == elem {
+			return true
+		}
+	}
+	return false
+}
+
 func PrintBankInfo() {
-	fmt.Println("Bank Name:", InstitutionName)
+	fmt.Println("| Bank Name:", InstitutionName)
+	fmt.Println("| ImmuDB instance running on port:", Client.GetOptions().Port)
+	fmt.Println("| ...")
 }

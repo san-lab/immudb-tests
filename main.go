@@ -9,8 +9,9 @@ import (
 )
 
 var InstitutionName string
-var CounterpartBanks = []string{"GreenBank", "RedBank", "BlueBank"}
+var CounterpartBanks []string
 
+var LibP2PNode *Node
 var Client client.ImmuClient
 
 func initDB(ip string, port int) {
@@ -27,8 +28,6 @@ func initDB(ip string, port int) {
 	Client = c
 }
 
-// TODO broadcast call to find other banks
-
 func main() {
 	ipFlag := flag.String("ip", "127.0.0.1", "ip to connect to the ImmuDB instance")
 	portFlag := flag.Int("port", 3322, "port to connect to the ImmuDB instance")
@@ -37,8 +36,12 @@ func main() {
 	flag.Parse()
 
 	InstitutionName = *institutionName
+	CounterpartBanks = []string{"GreenBank", "RedBank", "BlueBank"}
+
 	NET = *topicFlag
-	GetNode()
+	LibP2PNode, _ := GetNode()
+	LibP2PNode.GetNodeID()
+
 	initDB(*ipFlag, *portFlag)
 
 	// ensure connection is closed

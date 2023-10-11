@@ -55,8 +55,8 @@ func CurrentStateRoot() ([]byte, uint64, error) {
 	return root, state.GetTxId(), nil
 }
 
-func GetAllAccounts() (*schema.Entries, error) {
-	req := &schema.ScanRequest{Limit: 10} // only 10 users
+func GetAllEntries() (*schema.Entries, error) {
+	req := &schema.ScanRequest{Limit: 100} // 100 users...
 	entries, err := Client.Scan(context.Background(), req)
 	if err != nil {
 		fmt.Println(err)

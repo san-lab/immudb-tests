@@ -26,6 +26,7 @@ type Node struct {
 
 type GenericMessage struct {
 	MessageType string
+	Sender      string
 	Data        []byte
 }
 
@@ -51,6 +52,10 @@ func (node *Node) ProcessMessage(msg *pubsub.Message) {
 	err := json.Unmarshal(msg.Data, genmsg)
 	if err != nil {
 		fmt.Println("bad frame:", err)
+		return
+	}
+	// Discard messages sent by us
+	if genmsg.Sender == InstitutionName {
 		return
 	}
 
@@ -82,12 +87,15 @@ func (node *Node) ProcessMessage(msg *pubsub.Message) {
 			return
 		}
 		ProcessBankDiscoveryAnswer(discoveryAnswer)
+
+	default:
+		fmt.Println("u shouldnt be here...")
 	}
 
 }
 
 func (node *Node) SendMessage(dataType string, data []byte) {
-	genmsg := GenericMessage{MessageType: dataType, Data: data}
+	genmsg := GenericMessage{MessageType: dataType, Sender: InstitutionName, Data: data}
 	b, _ := json.Marshal(genmsg)
 	node.topic.Publish(context.Background(), b)
 }
@@ -129,5 +137,5 @@ func JoinNet(ctx context.Context, ps *pubsub.PubSub, selfID peer.ID, roomName st
 }
 
 func (node *Node) GetNodeID() string {
-	return string(node.self)
+	return string(node.self) // not working??
 }

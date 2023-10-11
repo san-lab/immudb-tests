@@ -72,11 +72,22 @@ func SetBalance(account *Account, newBalance float32) error {
 }
 
 // Print account details
-func PrintDetails(account *Account) {
-	fmt.Println("BIC:", account.Bic)
-	fmt.Println("IBAN:", account.Iban)
-	fmt.Println("Currency:", account.Currency)
-	fmt.Println("Holder:", account.Holder)
-	fmt.Println("Balance:", account.Balance)
-	fmt.Println("Suspended:", account.Suspended)
+func PrintAccount(account *Account, spacing bool) {
+	if spacing {
+		fmt.Println(" -----------------")
+		fmt.Printf("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n| Suspended: %t\n",
+			account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		fmt.Println(" -----------------")
+	} else {
+		fmt.Printf("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
+			account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+	}
+}
+
+func PrintAllAccounts(accounts []*Account) {
+	fmt.Println(" -----------------")
+	for _, account := range accounts {
+		PrintAccount(account, false)
+	}
+	fmt.Println(" -----------------")
 }
