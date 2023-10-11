@@ -1,8 +1,28 @@
 # Account structure
-TODO
+```
+Suspended bool
+Bic       string
+Iban      string
+Balance   float32
+Holder    string
+Currency  string
+```
 
 # Message format
-TODO
+Similar to Swift MT103:
+```
+TxReferenceNumber      string
+TimeIndication         string
+BankOperationCode      string
+ValueDate              string
+Currency               string
+ExchangeRate           string
+OrderingInstitution    string
+OrderingCustomer       string
+BeneficiaryInstitution string
+BeneficiaryCustomer    string
+Amount                 string
+```
 
 # Setup
 
