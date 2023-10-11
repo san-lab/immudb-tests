@@ -6,7 +6,12 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+const UP = "UP"
+const EXIT = "EXIT"
+
 var bankInfo = "Show bank information"
+var findCounterpartBanks = "Broadcast call to find other banks"
+var seeCounterpartBanks = "See current list of counterpart banks"
 
 var interBankTx = "Transfer to other bank client"
 var intraBankTx = "Transfer to another client of the same bank"
@@ -28,18 +33,14 @@ var vSet = "VerifiedSet"
 var vGet = "VerifiedGet"
 var txById = "Get transaction by ID"
 
-var findCounterpartBanks = "Broadcast call to find other banks"
-var seeCounterpartBanks = "See current list of counterpart banks"
-
 func TopUI() {
 	for {
 		items := []string{bankInfo, findCounterpartBanks, seeCounterpartBanks, printAllAccounts, printAccount, currentStateRoot, intraBankTx, interBankTx,
-			createAccount, setAccountBalance, depositToAccount, withdrawFromAccount, suspendAccount, unsuspendAccount,
-			txById, health, vSet, vGet}
+			manageAccount, txById, health, vSet, vGet}
 
-		items = append(items, "EXIT")
+		items = append(items, EXIT)
 		prompt := promptui.Select{
-			Label: "ImmuDB",
+			Label: InstitutionName + " - Actions",
 			Items: items,
 		}
 		_, it, _ := prompt.Run()
@@ -48,6 +49,15 @@ func TopUI() {
 
 		case bankInfo:
 			PrintBankInfo()
+
+		case findCounterpartBanks:
+			err := FindCounterpartBanks()
+			if err != nil {
+				fmt.Println(err)
+			}
+
+		case seeCounterpartBanks:
+			fmt.Println("Current list of banks: ", CounterpartBanks)
 
 		case interBankTx:
 			pr := promptui.Prompt{Label: "Introduce the sender of the transaction", Default: "test_userFrom"}
@@ -59,7 +69,8 @@ func TopUI() {
 
 			// TODO add a prompt to select from a list of banks
 			// CounterpartBanks
-			bankTo := ""
+			pr = promptui.Prompt{Label: "Introduce the institution recipient of the transaction", Default: "test_bankTo"}
+			bankTo, _ := pr.Run()
 
 			err := InterBankTx(userFrom, amount, userTo, bankTo)
 			if err != nil {
@@ -109,65 +120,10 @@ func TopUI() {
 				fmt.Printf("Tx with id %s (%d): (%s : %s)\n", id, i, entry.Key, entry.Value)
 			}
 
-		case manageAccount: // TODO new UI level
-
-		case createAccount:
-			pr := promptui.Prompt{Label: "Introduce the IBAN of the new account", Default: "test_IBAN"}
+		case manageAccount:
+			pr := promptui.Prompt{Label: "Introduce the IBAN of the account to manage", Default: "test_IBAN"}
 			userIban, _ := pr.Run()
-			pr = promptui.Prompt{Label: "Introduce the owner name of the new account", Default: "test_ownerName"}
-			userName, _ := pr.Run()
-
-			err := CreateAccount(userIban, userName)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-		case setAccountBalance:
-			pr := promptui.Prompt{Label: "Introduce the IBAN of the account", Default: "test_IBAN"}
-			userIban, _ := pr.Run()
-			pr = promptui.Prompt{Label: "Introduce the new balance of the account", Default: "1"}
-			balance, _ := pr.Run()
-
-			err := SetAccountBalance(userIban, balance)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-		case depositToAccount:
-			pr := promptui.Prompt{Label: "Introduce the IBAN of the account", Default: "test_IBAN"}
-			userIban, _ := pr.Run()
-			pr = promptui.Prompt{Label: "Introduce the amount to deposit to the account", Default: "1"}
-			amount, _ := pr.Run()
-
-			err := DepositToAccount(userIban, amount)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-		case withdrawFromAccount:
-			pr := promptui.Prompt{Label: "Introduce the IBAN of the account", Default: "test_IBAN"}
-			userIban, _ := pr.Run()
-			pr = promptui.Prompt{Label: "Introduce the amount to withdraw from the account", Default: "1"}
-			amount, _ := pr.Run()
-			WithdrawFromAccount(userIban, amount)
-
-		case suspendAccount:
-			pr := promptui.Prompt{Label: "Introduce the IBAN of the account", Default: "test_IBAN"}
-			userIban, _ := pr.Run()
-
-			err := SuspendAccount(userIban)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-		case unsuspendAccount:
-			pr := promptui.Prompt{Label: "Introduce the IBAN of the account", Default: "test_IBAN"}
-			userIban, _ := pr.Run()
-
-			err := UnsuspendAccount(userIban)
-			if err != nil {
-				fmt.Println(err)
-			}
+			ManageAccountUI(userIban)
 
 		case vSet:
 			pr := promptui.Prompt{Label: "Introduce the key", Default: "test_key"}
@@ -197,19 +153,75 @@ func TopUI() {
 			}
 			fmt.Printf("Health: Pending requests %d, Last request completed at %d\n", health.PendingRequests, health.LastRequestCompletedAt)
 
-		case findCounterpartBanks:
-			err := FindCounterpartBanks()
-			if err != nil {
-				fmt.Println(err)
-			}
-		case seeCounterpartBanks:
-			fmt.Println("Current list of banks: ", CounterpartBanks)
-
-		case "EXIT":
+		case EXIT:
 			return
 
 		default:
 			fmt.Println("u shouldnt be here...")
 		}
+	}
+}
+
+func ManageAccountUI(userIban string) {
+	items := []string{createAccount, setAccountBalance, depositToAccount, withdrawFromAccount, suspendAccount, unsuspendAccount}
+
+	items = append(items, UP)
+	prompt := promptui.Select{
+		Label: "Manage Account",
+		Items: items,
+	}
+	_, it, _ := prompt.Run()
+
+	switch it {
+
+	case createAccount:
+		pr := promptui.Prompt{Label: "Introduce the owner name of the new account", Default: "test_ownerName"}
+		userName, _ := pr.Run()
+
+		err := CreateAccount(userIban, userName)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+	case setAccountBalance:
+		pr := promptui.Prompt{Label: "Introduce the new balance of the account", Default: "1"}
+		balance, _ := pr.Run()
+
+		err := SetAccountBalance(userIban, balance)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+	case depositToAccount:
+		pr := promptui.Prompt{Label: "Introduce the amount to deposit to the account", Default: "1"}
+		amount, _ := pr.Run()
+
+		err := DepositToAccount(userIban, amount)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+	case withdrawFromAccount:
+		pr := promptui.Prompt{Label: "Introduce the amount to withdraw from the account", Default: "1"}
+		amount, _ := pr.Run()
+		WithdrawFromAccount(userIban, amount)
+
+	case suspendAccount:
+		err := SuspendAccount(userIban)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+	case unsuspendAccount:
+		err := UnsuspendAccount(userIban)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+	case UP:
+		return
+
+	default:
+		fmt.Println("u shouldnt be here...")
 	}
 }
