@@ -27,13 +27,15 @@ var health = "Health"
 var vSet = "VerifiedSet"
 var vGet = "VerifiedGet"
 var txById = "Get transaction by ID"
+
 var findCounterpartBanks = "Broadcast call to find other banks"
+var seeCounterpartBanks = "See current list of counterpart banks"
 
 func TopUI() {
 	for {
-		items := []string{bankInfo, printAllAccounts, printAccount, currentStateRoot, intraBankTx, interBankTx,
+		items := []string{bankInfo, findCounterpartBanks, seeCounterpartBanks, printAllAccounts, printAccount, currentStateRoot, intraBankTx, interBankTx,
 			createAccount, setAccountBalance, depositToAccount, withdrawFromAccount, suspendAccount, unsuspendAccount,
-			txById, health, vSet, vGet, findCounterpartBanks}
+			txById, health, vSet, vGet}
 
 		items = append(items, "EXIT")
 		prompt := promptui.Select{
@@ -57,8 +59,9 @@ func TopUI() {
 
 			// TODO add a prompt to select from a list of banks
 			// CounterpartBanks
+			bankTo := ""
 
-			err := InterBankTx(userFrom, amount, userTo /*, bankTo*/)
+			err := InterBankTx(userFrom, amount, userTo, bankTo)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -195,6 +198,12 @@ func TopUI() {
 			fmt.Printf("Health: Pending requests %d, Last request completed at %d\n", health.PendingRequests, health.LastRequestCompletedAt)
 
 		case findCounterpartBanks:
+			err := FindCounterpartBanks()
+			if err != nil {
+				fmt.Println(err)
+			}
+		case seeCounterpartBanks:
+			fmt.Println("Current list of banks: ", CounterpartBanks)
 
 		case "EXIT":
 			return

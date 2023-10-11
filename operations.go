@@ -7,6 +7,18 @@ import (
 	"strconv"
 )
 
+const MT103_string = "MT103"
+const BankDiscoveryMessage_string = "BankDiscoveryMessage"
+const BankDiscoveryAnswer_string = "BankDiscoveryAnswer"
+
+type BankDiscoveryMessage struct {
+	Hi string // ¿?
+}
+
+type BankDiscoveryAnswer struct {
+	MyBankName string
+}
+
 func CreateAccount(userIban, userName string) error {
 	// Check if IBAN already in database
 	_, err := GetAndDeserializeAccount(userIban)
@@ -131,7 +143,32 @@ func SerializeAndSetAccount(key string, accountState *Account) error {
 	return nil
 }
 
+func FindCounterpartBanks() error {
+	discoveryMsg := &BankDiscoveryMessage{Hi: "hi!"}
+	bytes, err := json.Marshal(discoveryMsg)
+	if err != nil {
+		return err
+	}
+	node.SendMessage(BankDiscoveryMessage_string, bytes)
+	return nil
+}
+
+func AnswerBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
+	discoveryAnswer := &BankDiscoveryAnswer{MyBankName: InstitutionName}
+	bytes, err := json.Marshal(discoveryAnswer)
+	if err != nil {
+		return err
+	}
+	node.SendMessage(BankDiscoveryAnswer_string, bytes)
+	return nil
+}
+
+func ProcessBankDiscoveryAnswer(discoveryAnswer *BankDiscoveryAnswer) error {
+	CounterpartBanks = append(CounterpartBanks, discoveryAnswer.MyBankName)
+	return nil
+}
+
 // TODO
 func PrintBankInfo() {
-	fmt.Println("TODO")
+	fmt.Println("Bank Name:", InstitutionName)
 }

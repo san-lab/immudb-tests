@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -21,15 +22,19 @@ type MT103Message struct {
 	Amount              string
 }
 
-func InterBankTx(userFrom, amount, userTo string) error { // TODO maybe another struct for the parameters
+func InterBankTx(userFrom, amount, userTo, bankTo string) error { // TODO maybe another struct for the parameters
 	err := WithdrawFromAccount(userFrom, amount)
 	if err != nil {
 		return err
 	}
 
 	// Sent event to the topic
-	txmsg := &MT103Message{OrderingInstitution: InstitutionName, OrderingCustomer: userFrom, BeneficiaryCustomer: userTo, Amount: amount}
-	node.SendMsg(txmsg)
+	txMsg := &MT103Message{OrderingInstitution: InstitutionName, OrderingCustomer: userFrom, BeneficiaryInstitution: bankTo, BeneficiaryCustomer: userTo, Amount: amount}
+	bytes, err := json.Marshal(txMsg)
+	if err != nil {
+		return err
+	}
+	node.SendMessage(MT103_string, bytes)
 	return nil
 }
 
@@ -54,9 +59,13 @@ func IntraBankTx(userFrom, amount, userTo string) error {
 }
 
 func validAndAddressedToUs(txmsg *MT103Message) bool {
+	if txmsg.BeneficiaryInstitution != InstitutionName {
+		return false
+	}
+
 	_, err := VerifiedGet(txmsg.BeneficiaryCustomer)
 	if err != nil {
-		fmt.Println("BeneficiaryCustomer is not in the database")
+		fmt.Println("Beneficiary customer is not in the database")
 		return false
 	}
 	return true

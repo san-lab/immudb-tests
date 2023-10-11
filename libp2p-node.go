@@ -24,6 +24,11 @@ type Node struct {
 	self  peer.ID
 }
 
+type GenericMessage struct {
+	MessageType string
+	Data        []byte
+}
+
 // readLoop pulls messages from the pubsub topic and pushes them onto the Messages channel.
 func (node *Node) readLoop() {
 	for {
@@ -42,17 +47,48 @@ func (node *Node) readLoop() {
 }
 
 func (node *Node) ProcessMessage(msg *pubsub.Message) {
-	txmsg := new(MT103Message)
-	err := json.Unmarshal(msg.Data, txmsg)
+	genmsg := new(GenericMessage)
+	err := json.Unmarshal(msg.Data, genmsg)
 	if err != nil {
 		fmt.Println("bad frame:", err)
 		return
 	}
-	ProcessInterBankTx(txmsg)
+
+	switch genmsg.MessageType {
+
+	case MT103_string:
+		txMsg := new(MT103Message)
+		err := json.Unmarshal(genmsg.Data, txMsg)
+		if err != nil {
+			fmt.Println("bad frame:", err)
+			return
+		}
+		ProcessInterBankTx(txMsg)
+
+	case BankDiscoveryMessage_string:
+		discoveryMsg := new(BankDiscoveryMessage)
+		err := json.Unmarshal(genmsg.Data, discoveryMsg)
+		if err != nil {
+			fmt.Println("bad frame:", err)
+			return
+		}
+		AnswerBankDiscovery(discoveryMsg)
+
+	case BankDiscoveryAnswer_string:
+		discoveryAnswer := new(BankDiscoveryAnswer)
+		err := json.Unmarshal(genmsg.Data, discoveryAnswer)
+		if err != nil {
+			fmt.Println("bad frame:", err)
+			return
+		}
+		ProcessBankDiscoveryAnswer(discoveryAnswer)
+	}
+
 }
 
-func (node *Node) SendMsg(txmsg *MT103Message) {
-	b, _ := json.Marshal(txmsg)
+func (node *Node) SendMessage(dataType string, data []byte) {
+	genmsg := GenericMessage{MessageType: dataType, Data: data}
+	b, _ := json.Marshal(genmsg)
 	node.topic.Publish(context.Background(), b)
 }
 
