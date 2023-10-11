@@ -8,6 +8,9 @@ import (
 	"github.com/codenotary/immudb/pkg/client"
 )
 
+var InstitutionName string
+var CounterpartBanks = []string{"GreenBank", "RedBank", "BlueBank"}
+
 var Client client.ImmuClient
 
 func initDB(ip string, port int) {
@@ -24,15 +27,18 @@ func initDB(ip string, port int) {
 	Client = c
 }
 
+// TODO broadcast call to find other banks
+
 func main() {
 	ipFlag := flag.String("ip", "127.0.0.1", "ip to connect to the ImmuDB instance")
 	portFlag := flag.Int("port", 3322, "port to connect to the ImmuDB instance")
 	topicFlag := flag.String("net", "ImmuDBTopic", "name of the topic for the network")
+	institutionName := flag.String("name", "SampleBank", "name of the financial institution")
 	flag.Parse()
 
+	InstitutionName = *institutionName
 	NET = *topicFlag
 	GetNode()
-
 	initDB(*ipFlag, *portFlag)
 
 	// ensure connection is closed

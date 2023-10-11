@@ -9,98 +9,116 @@ import (
 
 func CreateAccount(userIban, userName string) error {
 	// Check if IBAN already in database
-	_, err := VerifiedGet(userIban)
+	_, err := GetAndDeserializeAccount(userIban)
 	if err == nil {
 		fmt.Println("User with that IBAN is already in the database")
 		return errors.New("user with that IBAN is already in the database")
 	}
 
-	accountState := AccountState{OwnerName: userName, Balance: 0, Suspended: false} // TODO add attributes
-	accountStateRaw, err := json.Marshal(accountState)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
+	accountState := SetAccount("", userIban, 0, userName, "")
 
-	err = VerifiedSet(userIban, string(accountStateRaw))
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	return nil
+	err = SerializeAndSetAccount(userIban, accountState)
+	return err
 }
 
 func SuspendAccount(userIban string) error {
-	err := UpdateStateAttributes(userIban, []string{"Suspended"}, &AccountState{Suspended: false})
+	accountState, err := GetAndDeserializeAccount(userIban)
+	if err != nil {
+		return err
+	}
+	Suspend(accountState)
+	err = SerializeAndSetAccount(userIban, accountState)
 	return err
 }
 
-func SetBalance(userIban, balanceString string) error {
-	balance, err := strconv.Atoi(balanceString)
+func UnsuspendAccount(userIban string) error {
+	accountState, err := GetAndDeserializeAccount(userIban)
+	if err != nil {
+		return err
+	}
+	Unsuspend(accountState)
+	err = SerializeAndSetAccount(userIban, accountState)
+	return err
+}
+
+func SetAccountBalance(userIban, balanceString string) error {
+	balance, err := strconv.ParseFloat(balanceString, 32)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	err = UpdateStateAttributes(userIban, []string{"Balance"}, &AccountState{Balance: balance})
+
+	accountState, err := GetAndDeserializeAccount(userIban)
+	if err != nil {
+		return err
+	}
+	err = SetBalance(accountState, float32(balance))
+	if err != nil {
+		return err
+	}
+	err = SerializeAndSetAccount(userIban, accountState)
 	return err
 }
 
-func AddSubstractBalanceIfPossible(user, amount string, add bool) error {
-	// Pick state
-	accountStateRaw, err := VerifiedGet(user)
+func DepositToAccount(userIban, amountString string) error {
+	amount, err := strconv.ParseFloat(amountString, 32)
 	if err != nil {
+		fmt.Println(err)
 		return err
-	}
-	accountState := new(AccountState)
-	json.Unmarshal(accountStateRaw, accountState)
-
-	// Update state balance if possible
-	amountInt, err := strconv.Atoi(string(amount))
-	if err != nil {
-		return err
-	}
-	if add {
-		accountState.Balance += amountInt
-	} else {
-		accountState.Balance -= amountInt
-		if accountState.Balance <= 0 {
-			return errors.New("not enough balance to perform the transaction")
-		}
 	}
 
-	// Marshal and set new state into the DB
-	finalAccountState, err := json.Marshal(accountState)
+	accountState, err := GetAndDeserializeAccount(userIban)
 	if err != nil {
 		return err
 	}
-	err = VerifiedSet(user, string(finalAccountState))
+	err = Deposit(accountState, float32(amount))
 	if err != nil {
 		return err
 	}
+	err = SerializeAndSetAccount(userIban, accountState)
+	return err
+}
+
+func WithdrawFromAccount(userIban, amountString string) error {
+	amount, err := strconv.ParseFloat(amountString, 32)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	accountState, err := GetAndDeserializeAccount(userIban)
+	if err != nil {
+		return err
+	}
+	err = Withdraw(accountState, float32(amount))
+	if err != nil {
+		return err
+	}
+	err = SerializeAndSetAccount(userIban, accountState)
+	return err
+}
+
+func PrintAccount(userIban string) error {
+	accountState, err := GetAndDeserializeAccount(userIban)
+	if err != nil {
+		return err
+	}
+	PrintDetails(accountState)
 	return nil
 }
 
-func UpdateStateAttributes(key string, attributes []string, newValues *AccountState) error {
+func GetAndDeserializeAccount(key string) (*Account, error) {
 	// Pick state
 	accountStateRaw, err := VerifiedGet(key)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	accountState := new(AccountState)
-	json.Unmarshal(accountStateRaw, accountState)
+	accountState := new(Account)
+	json.Unmarshal(accountStateRaw.Value, accountState)
+	return accountState, nil
+}
 
-	// Update state
-	if contains(attributes, "OwnerName") {
-		accountState.OwnerName = newValues.OwnerName
-	}
-	if contains(attributes, "Balance") {
-		accountState.Balance = newValues.Balance
-	}
-	if contains(attributes, "Suspended") {
-		accountState.Suspended = newValues.Suspended
-	}
-	// TODO add attributes... identify a better way
-
+func SerializeAndSetAccount(key string, accountState *Account) error {
 	// Marshal and set new state into the DB
 	finalAccountState, err := json.Marshal(accountState)
 	if err != nil {
@@ -113,11 +131,7 @@ func UpdateStateAttributes(key string, attributes []string, newValues *AccountSt
 	return nil
 }
 
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
+// TODO
+func PrintBankInfo() {
+	fmt.Println("TODO")
 }

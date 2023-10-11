@@ -1,62 +1,82 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 )
 
 type Account struct {
-	suspended bool
-	bic       string
-	iban      string
-	balance   float32
-	holder    string
-	currency  string
+	Suspended bool
+	Bic       string
+	Iban      string
+	Balance   float32
+	Holder    string
+	Currency  string
 }
 
 // Opens a new bank account with the specified parameters
 func SetAccount(bic string, iban string, balance float32, holder string, currency string) *Account {
 	return &Account{
-		suspended: false,
-		bic:       bic,
-		iban:      iban,
-		balance:   balance,
-		holder:    holder,
-		currency:  currency}
+		Suspended: false,
+		Bic:       bic,
+		Iban:      iban,
+		Balance:   balance,
+		Currency:  currency}
 }
 
 // Suspends an account
 func Suspend(account *Account) {
-	account.suspended = true
+	account.Suspended = true
+}
+
+func Unsuspend(account *Account) {
+	account.Suspended = false
 }
 
 // Deposits an amount into an account
-func Deposit(account *Account, amount float32) {
-	if !account.suspended {
-		account.balance += amount
+func Deposit(account *Account, amount float32) error {
+	if !account.Suspended {
+		account.Balance += amount
 	} else {
-		fmt.Println("Account suspended: operation not performed")
+		return errors.New("account suspended: operation not performed")
 	}
+	return nil
 }
 
 // Withdraws an amount from an account
-func Withdraw(account *Account, amount float32) {
-	if !account.suspended {
-		account.balance -= amount
+func Withdraw(account *Account, amount float32) error {
+	if !account.Suspended {
+		if amount <= account.Balance {
+			account.Balance -= amount
+		} else {
+			return errors.New("balance cannot be negative")
+		}
+
 	} else {
-		fmt.Println("Account suspended: operation not performed")
+		return errors.New("account suspended: operation not performed")
 	}
+	return nil
 }
 
 // Returns current balance of an account
 func GetBalance(account *Account) float32 {
-	return account.balance
+	return account.Balance
 }
 
-//Print account details
-func AccountDetails (account *Account){
-	fmt.Println("BIC:",account.bic)
-	fmt.Println("IBAN:",account.iban)
-	fmt.Println("Currency:",account.currency)
-	fmt.Println("Holder:",account.holder)
-	fmt.Println("Balance:",account.balance)
+func SetBalance(account *Account, newBalance float32) error {
+	if newBalance < 0 {
+		return errors.New("balance cannot be negative")
+	}
+	account.Balance = newBalance
+	return nil
+}
+
+// Print account details
+func PrintDetails(account *Account) {
+	fmt.Println("BIC:", account.Bic)
+	fmt.Println("IBAN:", account.Iban)
+	fmt.Println("Currency:", account.Currency)
+	fmt.Println("Holder:", account.Holder)
+	fmt.Println("Balance:", account.Balance)
+	fmt.Println("Suspended:", account.Suspended)
 }

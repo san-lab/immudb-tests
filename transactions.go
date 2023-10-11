@@ -21,53 +21,39 @@ type MT103Message struct {
 	Amount              string
 }
 
-// Deprecated
-type TxMessage struct {
-	UserFrom string
-	UserTo   string
-	Amount   string
-}
-
-type AccountState struct {
-	Balance   int
-	OwnerName string
-	Suspended bool
-
-	Other      string
-	Meaningful string
-	Attributes string
-}
-
 func InterBankTx(userFrom, amount, userTo string) error { // TODO maybe another struct for the parameters
-	AddSubstractBalanceIfPossible(userFrom, amount, false)
+	err := WithdrawFromAccount(userFrom, amount)
+	if err != nil {
+		return err
+	}
 
 	// Sent event to the topic
-	txmsg := &MT103Message{OrderingCustomer: userFrom, BeneficiaryCustomer: userTo, Amount: amount}
+	txmsg := &MT103Message{OrderingInstitution: InstitutionName, OrderingCustomer: userFrom, BeneficiaryCustomer: userTo, Amount: amount}
 	node.SendMsg(txmsg)
 	return nil
 }
 
 // When receiveing a transaction
 func ProcessInterBankTx(txmsg *MT103Message) error {
-	if !isIncomingTxValid(txmsg) {
+	if !validAndAddressedToUs(txmsg) {
 		return errors.New("received transaction message is invalid")
 	}
 
-	err := AddSubstractBalanceIfPossible(txmsg.BeneficiaryCustomer, txmsg.Amount, true)
+	err := DepositToAccount(txmsg.BeneficiaryCustomer, txmsg.Amount)
 	return err
 }
 
 func IntraBankTx(userFrom, amount, userTo string) error {
-	err := AddSubstractBalanceIfPossible(userFrom, amount, false)
+	err := WithdrawFromAccount(userFrom, amount)
 	if err != nil {
 		return err
 	}
 
-	err = AddSubstractBalanceIfPossible(userTo, amount, true)
+	err = DepositToAccount(userTo, amount)
 	return err
 }
 
-func isIncomingTxValid(txmsg *MT103Message) bool {
+func validAndAddressedToUs(txmsg *MT103Message) bool {
 	_, err := VerifiedGet(txmsg.BeneficiaryCustomer)
 	if err != nil {
 		fmt.Println("BeneficiaryCustomer is not in the database")
