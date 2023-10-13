@@ -42,7 +42,6 @@ func (node *Node) readLoop() {
 		if msg.ReceivedFrom == node.self {
 			continue
 		}
-
 		node.ProcessMessage(msg)
 	}
 }
@@ -52,10 +51,6 @@ func (node *Node) ProcessMessage(msg *pubsub.Message) {
 	err := json.Unmarshal(msg.Data, genmsg)
 	if err != nil {
 		fmt.Println("bad frame:", err)
-		return
-	}
-	// Discard messages sent by us
-	if genmsg.Sender == InstitutionName {
 		return
 	}
 

@@ -66,17 +66,18 @@ func TopUI() {
 			amount, _ := pr.Run()
 			pr = promptui.Prompt{Label: "Introduce the recipient of the transaction", Default: "test_userTo"}
 			userTo, _ := pr.Run()
+
 			// Substitute by discoveredCounterpartBanks
 			prompt := promptui.Select{
 				Label: "Select the bank of the recipient of the transaction",
-				Items: CounterpartBanks,
+				Items: append(CounterpartBanks, UP),
 			}
-
 			_, bankTo, _ := prompt.Run()
-
-			err := InterBankTx(userFrom, amount, userTo, bankTo)
-			if err != nil {
-				fmt.Println(err)
+			if bankTo != UP {
+				err := InterBankTx(userFrom, amount, userTo, bankTo)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 
 		case intraBankTx:
@@ -230,4 +231,6 @@ func ManageAccountUI(userIban string) {
 	default:
 		fmt.Println("u shouldnt be here...")
 	}
+
+	ManageAccountUI(userIban) // Dont go up until account management is finished
 }

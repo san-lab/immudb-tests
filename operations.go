@@ -180,7 +180,7 @@ func AnswerBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 }
 
 func ProcessBankDiscoveryAnswer(discoveryAnswer *BankDiscoveryAnswer) error {
-	if !contains(CounterpartBanks, discoveryAnswer.MyBankName) && discoveryAnswer.MyBankName != InstitutionName {
+	if !contains(CounterpartBanks, discoveryAnswer.MyBankName) /* && discoveryAnswer.MyBankName != InstitutionName */ {
 		CounterpartBanks = append(CounterpartBanks, discoveryAnswer.MyBankName)
 	}
 	return nil

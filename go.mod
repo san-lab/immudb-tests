@@ -1,4 +1,4 @@
-module github.com/immudb-tests/crosstx
+module github.com/immudb-tests/bank
 
 go 1.20
 
