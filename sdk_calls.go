@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -77,4 +79,63 @@ func TxById(idString string) (*schema.Tx, error) {
 		return nil, err
 	}
 	return tx, nil
+}
+
+func StoreInMsgsDB(txmsg *MT103Message) (string, error) {
+	_, err := Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: MsgsDB})
+	if err != nil {
+		return "", err
+	}
+
+	value, err := json.Marshal(txmsg)
+	if err != nil {
+		return "", err
+	}
+	hash := sha256.Sum256(value)
+	key := fmt.Sprintf("0x%x", hash[:])
+	err = VerifiedSet(key, string(value))
+	if err != nil {
+		return "", err
+	}
+
+	// Switch back to the main database...
+	_, err = Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: StateDB})
+	return key, err
+}
+
+func VerifiedGetMsg(key string) (*schema.Entry, error) {
+	_, err := Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: MsgsDB})
+	if err != nil {
+		return nil, err
+	}
+
+	entry, err := Client.VerifiedGet(context.Background(), []byte(key))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: StateDB})
+	return entry, err
+}
+
+func GetAllMsgsEntries() (*schema.Entries, error) {
+	_, err := Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: MsgsDB})
+	if err != nil {
+		return nil, err
+	}
+
+	req := &schema.ScanRequest{Limit: 100} // 100 users...
+	entries, err := Client.Scan(context.Background(), req)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	// Switch back to the main database...
+	_, err = Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: StateDB})
+	if err != nil {
+		return nil, err
+	}
+
+	return entries, nil
 }

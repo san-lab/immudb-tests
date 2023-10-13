@@ -9,34 +9,37 @@ import (
 const UP = "UP"
 const EXIT = "EXIT"
 
-var bankInfo = "Show bank information"
-var findCounterpartBanks = "Broadcast call to find other banks"
-var seeCounterpartBanks = "See current list of counterpart banks"
+const bankInfo = "Show bank information"
+const findCounterpartBanks = "Broadcast call to find other banks"
+const seeCounterpartBanks = "See current list of counterpart banks"
 
-var interBankTx = "Transfer to other bank client"
-var intraBankTx = "Transfer to another client of the same bank"
+const interBankTx = "Transfer to other bank client"
+const intraBankTx = "Transfer to another client of the same bank"
 
-var currentStateRoot = "Current state root"
-var printAllAccounts = "Print all key-values stored"
-var printAccount = "Print all values of an account"
+const currentStateRoot = "Current state root"
+const printAllAccounts = "Print all key-values stored"
+const printAccount = "Print all values of an account"
 
-var manageAccount = "Manage an account"
-var createAccount = "Create a new account"
-var setAccountBalance = "Set the balance of an account"
-var depositToAccount = "Deposit the specified amount to an account"
-var withdrawFromAccount = "Withdraw the specified amount from an account"
-var suspendAccount = "Suspend an account"
-var unsuspendAccount = "Unsuspend an account"
+const manageAccount = "Manage an account"
+const createAccount = "Create a new account"
+const setAccountBalance = "Set the balance of an account"
+const depositToAccount = "Deposit the specified amount to an account"
+const withdrawFromAccount = "Withdraw the specified amount from an account"
+const suspendAccount = "Suspend an account"
+const unsuspendAccount = "Unsuspend an account"
 
-var health = "Health"
-var vSet = "VerifiedSet"
-var vGet = "VerifiedGet"
-var txById = "Get transaction by ID"
+const health = "Health"
+const vSet = "VerifiedSet"
+const vGet = "VerifiedGet"
+const txById = "Get transaction by ID"
+
+const seeMessagesDB = "See messages database...WIP"
+const seeMessageByHash = "See a message by its hash...WIP"
 
 func TopUI() {
 	for {
 		items := []string{bankInfo, findCounterpartBanks, seeCounterpartBanks, printAllAccounts, printAccount, currentStateRoot, intraBankTx, interBankTx,
-			manageAccount, txById, health, vSet, vGet}
+			manageAccount, txById, health, vSet, vGet, seeMessagesDB, seeMessageByHash}
 
 		items = append(items, EXIT)
 		prompt := promptui.Select{
@@ -152,6 +155,22 @@ func TopUI() {
 				fmt.Println(err)
 			}
 			fmt.Printf("Health: Pending requests %d, Last request completed at %d\n", health.PendingRequests, health.LastRequestCompletedAt)
+
+		case seeMessagesDB:
+			msgentries, err := GetAllMessages()
+			if err != nil {
+				fmt.Println(err)
+			}
+			PrintAllMessages(msgentries)
+
+		case seeMessageByHash:
+			pr := promptui.Prompt{Label: "Introduce the hash of the message", Default: "test_hash"}
+			hash, _ := pr.Run()
+			message, err := GetMessage(hash)
+			if err != nil {
+				fmt.Println(err)
+			}
+			PrintMessage(message, true)
 
 		case EXIT:
 			return

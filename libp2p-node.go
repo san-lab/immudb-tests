@@ -72,16 +72,7 @@ func (node *Node) ProcessMessage(msg *pubsub.Message) {
 			fmt.Println("bad frame:", err)
 			return
 		}
-		AnswerBankDiscovery(discoveryMsg)
-
-	case BankDiscoveryAnswer_string:
-		discoveryAnswer := new(BankDiscoveryAnswer)
-		err := json.Unmarshal(genmsg.Data, discoveryAnswer)
-		if err != nil {
-			fmt.Println("bad frame:", err)
-			return
-		}
-		ProcessBankDiscoveryAnswer(discoveryAnswer)
+		ProcessBankDiscovery(discoveryMsg)
 
 	default:
 		fmt.Println("u shouldnt be here...")

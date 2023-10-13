@@ -28,12 +28,17 @@ func InterBankTx(userFrom, amount, userTo, bankTo string) error { // TODO maybe 
 		return err
 	}
 
-	// Sent event to the topic
-	txMsg := &MT103Message{OrderingInstitution: InstitutionName, OrderingCustomer: userFrom, BeneficiaryInstitution: bankTo, BeneficiaryCustomer: userTo, Amount: amount}
-	bytes, err := json.Marshal(txMsg)
+	// Send event to the topic and store it in MsgsDB
+	txmsg := &MT103Message{OrderingInstitution: InstitutionName, OrderingCustomer: userFrom, BeneficiaryInstitution: bankTo, BeneficiaryCustomer: userTo, Amount: amount}
+	bytes, err := json.Marshal(txmsg)
 	if err != nil {
 		return err
 	}
+	hash, err := StoreInMsgsDB(txmsg)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Hash of the message sent:", hash)
 	node.SendMessage(MT103_string, bytes)
 	return nil
 }
@@ -43,8 +48,12 @@ func ProcessInterBankTx(txmsg *MT103Message) error {
 	if !validAndAddressedToUs(txmsg) {
 		return errors.New("received transaction message is invalid")
 	}
-
-	err := DepositToAccount(txmsg.BeneficiaryCustomer, txmsg.Amount)
+	hash, err := StoreInMsgsDB(txmsg)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Hash of the message received:", hash)
+	err = DepositToAccount(txmsg.BeneficiaryCustomer, txmsg.Amount)
 	return err
 }
 
@@ -70,4 +79,50 @@ func validAndAddressedToUs(txmsg *MT103Message) bool {
 	}
 	return true
 	// TODO check more stuff..
+}
+
+func PrintMessage(mtmsg *MT103Message, spacing bool) {
+	incOutGoing := "Outgoing message"
+	if mtmsg.BeneficiaryInstitution == InstitutionName {
+		incOutGoing = "Incoming message"
+	}
+	if spacing {
+		fmt.Println(" -----------------")
+		fmt.Printf("| %s\n| TxReferenceNumber: %s\n| TimeIndication: %s\n| BankOperationCode: %s\n| ValueDate: %s\n| Currency: %s\n| ExchangeRate: %s\n| OrderingInstitution: %s\n| BeneficiaryInstitution: %s\n| OrderingCustomer: %s\n| BeneficiaryCustomer: %s\n| Amount: %s\n",
+			incOutGoing,
+			mtmsg.TxReferenceNumber,
+			mtmsg.TimeIndication,
+			mtmsg.BankOperationCode,
+			mtmsg.ValueDate,
+			mtmsg.Currency,
+			mtmsg.ExchangeRate,
+			mtmsg.OrderingInstitution,
+			mtmsg.BeneficiaryInstitution,
+			mtmsg.OrderingCustomer,
+			mtmsg.BeneficiaryCustomer,
+			mtmsg.Amount)
+		fmt.Println(" -----------------")
+	} else {
+		fmt.Printf("| %s | TxReferenceNumber: %s | TimeIndication: %s | BankOperationCode: %s | ValueDate: %s | Currency: %s | ExchangeRate: %s | OrderingInstitution: %s | BeneficiaryInstitution: %s | OrderingCustomer: %s | BeneficiaryCustomer: %s | Amount: %s\n",
+			incOutGoing,
+			mtmsg.TxReferenceNumber,
+			mtmsg.TimeIndication,
+			mtmsg.BankOperationCode,
+			mtmsg.ValueDate,
+			mtmsg.Currency,
+			mtmsg.ExchangeRate,
+			mtmsg.OrderingInstitution,
+			mtmsg.BeneficiaryInstitution,
+			mtmsg.OrderingCustomer,
+			mtmsg.BeneficiaryCustomer,
+			mtmsg.Amount)
+	}
+}
+
+func PrintAllMessages(mtmsgs []*MT103Message) {
+	fmt.Println(" -----------------")
+	for _, msg := range mtmsgs {
+		PrintMessage(msg, false)
+	}
+	fmt.Println(" -----------------")
 }
