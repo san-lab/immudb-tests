@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // MT103-like message
@@ -29,7 +30,7 @@ func InterBankTx(userFrom, amount, userTo, bankTo string) error { // TODO maybe 
 	}
 
 	// Send event to the topic and store it in MsgsDB
-	txmsg := &MT103Message{OrderingInstitution: InstitutionName, OrderingCustomer: userFrom, BeneficiaryInstitution: bankTo, BeneficiaryCustomer: userTo, Amount: amount}
+	txmsg := &MT103Message{TimeIndication: time.Now().String(), OrderingInstitution: InstitutionName, OrderingCustomer: userFrom, BeneficiaryInstitution: bankTo, BeneficiaryCustomer: userTo, Amount: amount}
 	bytes, err := json.Marshal(txmsg)
 	if err != nil {
 		return err

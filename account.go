@@ -21,6 +21,7 @@ func SetAccount(bic string, iban string, balance float32, holder string, currenc
 		Bic:       bic,
 		Iban:      iban,
 		Balance:   balance,
+		Holder:    holder,
 		Currency:  currency}
 }
 

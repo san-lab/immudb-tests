@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"testing"
 
@@ -48,4 +49,9 @@ func TestDBConnection(t *testing.T) {
 	fmt.Println("err:", err)
 	fmt.Println("db2:", c.GetOptions().CurrentDatabase)
 
+}
+
+func TestTimestamp(t *testing.T) {
+	timestamp := time.Now()
+	fmt.Println(timestamp.String())
 }
