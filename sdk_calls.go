@@ -13,7 +13,7 @@ import (
 func VerifiedSet(key, value string) error {
 	// write an entry
 	// upon submission, the SDK validates proofs and updates the local state under the hood
-	hdr, err := Client.VerifiedSet(context.Background(), []byte(key), []byte(value))
+	hdr, err := StateClient.VerifiedSet(context.Background(), []byte(key), []byte(value))
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -27,7 +27,7 @@ func VerifiedSet(key, value string) error {
 func VerifiedGet(key string) (*schema.Entry, error) {
 	// read an entry
 	// upon submission, the SDK validates proofs and updates the local state under the hood
-	entry, err := Client.VerifiedGet(context.Background(), []byte(key))
+	entry, err := StateClient.VerifiedGet(context.Background(), []byte(key))
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func VerifiedGet(key string) (*schema.Entry, error) {
 }
 
 func Health() (*schema.DatabaseHealthResponse, error) {
-	health, err := Client.Health(context.Background())
+	health, err := StateClient.Health(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -43,12 +43,12 @@ func Health() (*schema.DatabaseHealthResponse, error) {
 }
 
 func CurrentStateRoot() ([]byte, uint64, error) {
-	state, err := Client.CurrentState(context.Background())
+	state, err := StateClient.CurrentState(context.Background())
 	if err != nil {
 		fmt.Println(err)
 		return nil, 0, err
 	}
-	tx, err := Client.TxByID(context.Background(), state.GetTxId())
+	tx, err := StateClient.TxByID(context.Background(), state.GetTxId())
 	if err != nil {
 		fmt.Println(err)
 		return nil, 0, err
@@ -59,7 +59,7 @@ func CurrentStateRoot() ([]byte, uint64, error) {
 
 func GetAllEntries() (*schema.Entries, error) {
 	req := &schema.ScanRequest{Limit: 100} // 100 users...
-	entries, err := Client.Scan(context.Background(), req)
+	entries, err := StateClient.Scan(context.Background(), req)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -73,7 +73,7 @@ func TxById(idString string) (*schema.Tx, error) {
 		fmt.Println(err)
 		return nil, err
 	}
-	tx, err := Client.TxByID(context.Background(), uint64(id))
+	tx, err := StateClient.TxByID(context.Background(), uint64(id))
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -81,61 +81,26 @@ func TxById(idString string) (*schema.Tx, error) {
 	return tx, nil
 }
 
-func StoreInMsgsDB(txmsg *MT103Message) (string, error) {
-	_, err := Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: MsgsDB})
-	if err != nil {
-		return "", err
-	}
+// ----- Msgs database methods -----
 
+func StoreInMsgsDB(txmsg *MT103Message) (string, error) {
 	value, err := json.Marshal(txmsg)
 	if err != nil {
 		return "", err
 	}
 	hash := sha256.Sum256(value)
 	key := fmt.Sprintf("0x%x", hash[:])
-	err = VerifiedSet(key, string(value))
-	if err != nil {
-		return "", err
-	}
-
-	// Switch back to the main database...
-	_, err = Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: StateDB})
+	_, err = MsgsClient.VerifiedSet(context.Background(), []byte(key), value)
 	return key, err
 }
 
 func VerifiedGetMsg(key string) (*schema.Entry, error) {
-	_, err := Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: MsgsDB})
-	if err != nil {
-		return nil, err
-	}
-
-	entry, err := Client.VerifiedGet(context.Background(), []byte(key))
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: StateDB})
+	entry, err := MsgsClient.VerifiedGet(context.Background(), []byte(key))
 	return entry, err
 }
 
 func GetAllMsgsEntries() (*schema.Entries, error) {
-	_, err := Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: MsgsDB})
-	if err != nil {
-		return nil, err
-	}
-
 	req := &schema.ScanRequest{Limit: 100} // 100 users...
-	entries, err := Client.Scan(context.Background(), req)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-
-	// Switch back to the main database...
-	_, err = Client.UseDatabase(context.Background(), &schema.Database{DatabaseName: StateDB})
-	if err != nil {
-		return nil, err
-	}
-
-	return entries, nil
+	entries, err := MsgsClient.Scan(context.Background(), req)
+	return entries, err
 }

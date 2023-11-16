@@ -14,7 +14,8 @@ var InstitutionName string
 var CounterpartBanks []string
 
 var LibP2PNode *Node
-var Client client.ImmuClient
+var StateClient client.ImmuClient
+var MsgsClient client.ImmuClient
 
 const StateDB = "defaultdb"
 const MsgsDB = "msgdb"
@@ -22,24 +23,33 @@ const MsgsDB = "msgdb"
 func initDB(ip string, port int) {
 	// even though the server address and port are defaults, setting them as a reference
 	opts := client.DefaultOptions().WithAddress(ip).WithPort(port)
+	opts2 := client.DefaultOptions().WithAddress(ip).WithPort(port)
+
 	c := client.NewClient().WithOptions(opts)
+	c2 := client.NewClient().WithOptions(opts2)
 
 	// connect with immudb server (user, password, database)
 	err := c.OpenSession(context.Background(), []byte("immudb"), []byte("immudb"), "defaultdb")
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = c2.OpenSession(context.Background(), []byte("immudb"), []byte("immudb"), "defaultdb")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Tries to create both databases in case they dont exist (not thread safe without mutex or second client)
 	c.CreateDatabaseV2(context.Background(), StateDB, &schema.DatabaseNullableSettings{})
-	c.CreateDatabaseV2(context.Background(), MsgsDB, &schema.DatabaseNullableSettings{})
+	c2.CreateDatabaseV2(context.Background(), MsgsDB, &schema.DatabaseNullableSettings{})
 
-	_, err = c.UseDatabase(context.Background(), &schema.Database{DatabaseName: MsgsDB})
-	fmt.Println("Connection check", err, c.GetOptions().CurrentDatabase)
 	_, err = c.UseDatabase(context.Background(), &schema.Database{DatabaseName: StateDB})
-	fmt.Println("Connection check", err, c.GetOptions().CurrentDatabase)
+	fmt.Println("Connection check State client", err, c.GetOptions().CurrentDatabase)
 
-	Client = c
+	_, err = c2.UseDatabase(context.Background(), &schema.Database{DatabaseName: MsgsDB})
+	fmt.Println("Connection check Msgs client", err, c2.GetOptions().CurrentDatabase)
+
+	StateClient = c
+	MsgsClient = c2
 }
 
 func main() {
@@ -59,7 +69,8 @@ func main() {
 	initDB(*ipFlag, *portFlag)
 
 	// ensure connection is closed
-	defer Client.CloseSession(context.Background())
+	defer StateClient.CloseSession(context.Background())
+	defer MsgsClient.CloseSession(context.Background())
 
 	// PromptUI to select action
 	TopUI()

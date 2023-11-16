@@ -42,5 +42,5 @@ For some reason, the web server still points to the first instance...
 4. Start two ImmuDB clients pointing to the respectives databases
 ```
 ./binary_name
-./binary_name -port 3323
+./binary_name -port 3323 -name BankName
 ```

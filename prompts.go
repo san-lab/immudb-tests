@@ -27,6 +27,7 @@ const depositToAccount = "Deposit the specified amount to the account"
 const withdrawFromAccount = "Withdraw the specified amount from the account"
 const suspendAccount = "Suspend the account"
 const unsuspendAccount = "Unsuspend the account"
+const getAccountDigest = "Get the digest of the account"
 
 const health = "Health"
 const vSet = "VerifiedSet"
@@ -119,7 +120,7 @@ func TopUI() {
 				fmt.Println(err)
 				continue
 			}
-			PrintAccount(account, true)
+			account.PrintAccount(true)
 
 		case txById:
 			pr := promptui.Prompt{Label: "Introduce the ID of the transaction", Default: "0"}
@@ -217,7 +218,7 @@ func TopUI() {
 
 func ManageAccountUI(userIban string) {
 	for {
-		items := []string{printAccount, setAccountBalance, depositToAccount, withdrawFromAccount, suspendAccount, unsuspendAccount}
+		items := []string{printAccount, setAccountBalance, depositToAccount, withdrawFromAccount, suspendAccount, unsuspendAccount, getAccountDigest}
 
 		items = append(items, UP)
 		prompt := promptui.Select{
@@ -234,7 +235,7 @@ func ManageAccountUI(userIban string) {
 				fmt.Println(err)
 				continue
 			}
-			PrintAccount(account, true)
+			account.PrintAccount(true)
 
 		case setAccountBalance:
 			pr := promptui.Prompt{Label: "Introduce the new balance of the account", Default: "1"}
@@ -278,6 +279,14 @@ func ManageAccountUI(userIban string) {
 				fmt.Println(err)
 				continue
 			}
+
+		case getAccountDigest:
+			accountDigest, err := GetAccountDigest(userIban)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Printf("Account digest: 0x%x\n", accountDigest)
 
 		case UP:
 			return

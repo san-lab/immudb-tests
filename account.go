@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 )
@@ -26,16 +27,16 @@ func SetAccount(bic string, iban string, balance float32, holder string, currenc
 }
 
 // Suspends an account
-func Suspend(account *Account) {
+func (account *Account) Suspend() {
 	account.Suspended = true
 }
 
-func Unsuspend(account *Account) {
+func (account *Account) Unsuspend() {
 	account.Suspended = false
 }
 
 // Deposits an amount into an account
-func Deposit(account *Account, amount float32) error {
+func (account *Account) Deposit(amount float32) error {
 	if !account.Suspended {
 		account.Balance += amount
 	} else {
@@ -45,7 +46,7 @@ func Deposit(account *Account, amount float32) error {
 }
 
 // Withdraws an amount from an account
-func Withdraw(account *Account, amount float32) error {
+func (account *Account) Withdraw(amount float32) error {
 	if !account.Suspended {
 		if amount <= account.Balance {
 			account.Balance -= amount
@@ -60,11 +61,11 @@ func Withdraw(account *Account, amount float32) error {
 }
 
 // Returns current balance of an account
-func GetBalance(account *Account) float32 {
+func (account *Account) GetBalance() float32 {
 	return account.Balance
 }
 
-func SetBalance(account *Account, newBalance float32) error {
+func (account *Account) SetBalance(newBalance float32) error {
 	if newBalance < 0 {
 		return errors.New("balance cannot be negative")
 	}
@@ -72,8 +73,15 @@ func SetBalance(account *Account, newBalance float32) error {
 	return nil
 }
 
+func (account *Account) GetDigest() ([]byte, error) {
+	fields := fmt.Sprintf("%s%s%f%s%s%t", account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+	fmt.Println("debug fields:", fields)
+	sum := sha256.Sum256([]byte(fields))
+	return sum[:], nil
+}
+
 // Print account details
-func PrintAccount(account *Account, spacing bool) {
+func (account *Account) PrintAccount(spacing bool) {
 	if spacing {
 		fmt.Println(" -----------------")
 		fmt.Printf("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n| Suspended: %t\n",
@@ -88,7 +96,7 @@ func PrintAccount(account *Account, spacing bool) {
 func PrintAllAccounts(accounts []*Account) {
 	fmt.Println(" -----------------")
 	for _, account := range accounts {
-		PrintAccount(account, false)
+		account.PrintAccount(false)
 	}
 	fmt.Println(" -----------------")
 }

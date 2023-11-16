@@ -37,7 +37,7 @@ func SuspendAccount(userIban string) error {
 	if err != nil {
 		return err
 	}
-	Suspend(accountState)
+	accountState.Suspend()
 	err = SerializeAndSetAccount(userIban, accountState)
 	return err
 }
@@ -47,7 +47,7 @@ func UnsuspendAccount(userIban string) error {
 	if err != nil {
 		return err
 	}
-	Unsuspend(accountState)
+	accountState.Unsuspend()
 	err = SerializeAndSetAccount(userIban, accountState)
 	return err
 }
@@ -63,7 +63,7 @@ func SetAccountBalance(userIban, balanceString string) error {
 	if err != nil {
 		return err
 	}
-	err = SetBalance(accountState, float32(balance))
+	err = accountState.SetBalance(float32(balance))
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func DepositToAccount(userIban, amountString string) error {
 	if err != nil {
 		return err
 	}
-	err = Deposit(accountState, float32(amount))
+	err = accountState.Deposit(float32(amount))
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func WithdrawFromAccount(userIban, amountString string) error {
 	if err != nil {
 		return err
 	}
-	err = Withdraw(accountState, float32(amount))
+	err = accountState.Withdraw(float32(amount))
 	if err != nil {
 		return err
 	}
@@ -115,6 +115,15 @@ func GetAccount(userIban string) (*Account, error) {
 		return nil, err
 	}
 	return accountState, nil
+}
+
+func GetAccountDigest(userIban string) ([]byte, error) {
+	accountState, err := GetAndDeserializeAccount(userIban)
+	if err != nil {
+		return nil, err
+	}
+	accountDigest, err := accountState.GetDigest()
+	return accountDigest, nil
 }
 
 func GetAllAccounts() ([]*Account, error) {
@@ -222,7 +231,7 @@ func contains(list []string, elem string) bool {
 
 func PrintBankInfo() {
 	fmt.Println("| Bank Name:", InstitutionName)
-	fmt.Println("| ImmuDB instance running on IP:", Client.GetOptions().Address)
-	fmt.Println("| ImmuDB instance running on port:", Client.GetOptions().Port)
+	fmt.Println("| ImmuDB instance running on IP:", StateClient.GetOptions().Address)
+	fmt.Println("| ImmuDB instance running on port:", StateClient.GetOptions().Port)
 	fmt.Println("| ...")
 }
