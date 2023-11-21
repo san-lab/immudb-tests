@@ -1,4 +1,4 @@
-package main
+package immudbsdk
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/codenotary/immudb/pkg/api/schema"
+	. "github.com/san-lab/immudb-tests/datastructs"
 )
 
 func VerifiedSet(key, value string) error {

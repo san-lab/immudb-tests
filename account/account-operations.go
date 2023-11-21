@@ -1,22 +1,13 @@
-package main
+package account
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
+
+	sdk "github.com/san-lab/immudb-tests/immudbsdk"
 )
-
-const Question = "question"
-const Answer = "answer"
-
-const MT103_string = "MT103"
-const BankDiscoveryMessage_string = "BankDiscoveryMessage"
-
-type BankDiscoveryMessage struct {
-	Type       string // to prevent infinite loop
-	MyBankName string
-}
 
 func CreateAccount(userIban, userName string) error {
 	// Check if IBAN already in database
@@ -126,54 +117,9 @@ func GetAccountDigest(userIban string) ([]byte, error) {
 	return accountDigest, nil
 }
 
-func GetAllAccounts() ([]*Account, error) {
-	entries, err := GetAllEntries()
-	if err != nil {
-		return nil, err
-	}
-	accounts := []*Account{}
-	for _, entry := range entries.Entries {
-		accountState := new(Account)
-		err := json.Unmarshal(entry.Value, accountState)
-		if err != nil {
-			return accounts, err
-		}
-		accounts = append(accounts, accountState)
-	}
-	return accounts, nil
-}
-
-func GetMessage(key string) (*MT103Message, error) {
-	// Pick message
-	messageRaw, err := VerifiedGetMsg(key)
-	if err != nil {
-		return nil, err
-	}
-	message := new(MT103Message)
-	err = json.Unmarshal(messageRaw.Value, message)
-	return message, err
-}
-
-func GetAllMessages() ([]*MT103Message, error) {
-	entries, err := GetAllMsgsEntries()
-	if err != nil {
-		return nil, err
-	}
-	messages := []*MT103Message{}
-	for _, entry := range entries.Entries {
-		message := new(MT103Message)
-		err := json.Unmarshal(entry.Value, message)
-		if err != nil {
-			return messages, err
-		}
-		messages = append(messages, message)
-	}
-	return messages, nil
-}
-
 func GetAndDeserializeAccount(key string) (*Account, error) {
 	// Pick state
-	accountStateRaw, err := VerifiedGet(key)
+	accountStateRaw, err := sdk.VerifiedGet(key)
 	if err != nil {
 		return nil, err
 	}
@@ -188,50 +134,23 @@ func SerializeAndSetAccount(key string, accountState *Account) error {
 	if err != nil {
 		return err
 	}
-	err = VerifiedSet(key, string(finalAccountState))
+	err = sdk.VerifiedSet(key, string(finalAccountState))
 	return err
 }
 
-func FindCounterpartBanks() error {
-	discoveryMsg := &BankDiscoveryMessage{Type: Question, MyBankName: InstitutionName}
-	bytes, err := json.Marshal(discoveryMsg)
+func GetAllAccounts() ([]*Account, error) {
+	entries, err := sdk.GetAllEntries()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	node.SendMessage(BankDiscoveryMessage_string, bytes)
-	return nil
-}
-
-func ProcessBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
-	// Pick the other bank name
-	if !contains(CounterpartBanks, discoveryMsg.MyBankName) /* && discoveryMsg.MyBankName != InstitutionName */ {
-		CounterpartBanks = append(CounterpartBanks, discoveryMsg.MyBankName)
-	}
-
-	// Answer if needed
-	if discoveryMsg.Type == Question {
-		discoveryAnswer := &BankDiscoveryMessage{Type: Answer, MyBankName: InstitutionName}
-		bytes, err := json.Marshal(discoveryAnswer)
+	accounts := []*Account{}
+	for _, entry := range entries.Entries {
+		accountState := new(Account)
+		err := json.Unmarshal(entry.Value, accountState)
 		if err != nil {
-			return err
+			return accounts, err
 		}
-		node.SendMessage(BankDiscoveryMessage_string, bytes)
+		accounts = append(accounts, accountState)
 	}
-	return nil
-}
-
-func contains(list []string, elem string) bool {
-	for _, a := range list {
-		if a == elem {
-			return true
-		}
-	}
-	return false
-}
-
-func PrintBankInfo() {
-	fmt.Println("| Bank Name:", InstitutionName)
-	fmt.Println("| ImmuDB instance running on IP:", StateClient.GetOptions().Address)
-	fmt.Println("| ImmuDB instance running on port:", StateClient.GetOptions().Port)
-	fmt.Println("| ...")
+	return accounts, nil
 }

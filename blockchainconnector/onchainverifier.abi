@@ -1,0 +1,214 @@
+[
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_originatorBank",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_recipientBank",
+				"type": "address"
+			}
+		],
+		"name": "getPendingSubmissions",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_originatorBank",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_recipientBank",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_blockNumber",
+				"type": "uint256"
+			}
+		],
+		"name": "getStateCheckByBlockNumber",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "submittedHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "submittedPreimage",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bool",
+				"name": "verified",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "blockNumber",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_originatorBank",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_recipientBank",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "index",
+				"type": "uint256"
+			}
+		],
+		"name": "getStateCheckByIndex",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "submittedHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "submittedPreimage",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bool",
+				"name": "verified",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "blockNumber",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "stateChecks",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "submittedHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "submittedPreimage",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bool",
+				"name": "verified",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "blockNumber",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_originatorBank",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_recipientBank",
+				"type": "address"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_hash",
+				"type": "bytes32"
+			}
+		],
+		"name": "submitHash",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_originatorBank",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_recipientBank",
+				"type": "address"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_preimage",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_blockNumber",
+				"type": "uint256"
+			}
+		],
+		"name": "submitPreimage",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+]

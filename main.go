@@ -8,17 +8,12 @@ import (
 
 	"github.com/codenotary/immudb/pkg/api/schema"
 	"github.com/codenotary/immudb/pkg/client"
+	"github.com/spf13/viper"
+
+	"github.com/san-lab/immudb-tests/blockchainconnector"
+	. "github.com/san-lab/immudb-tests/datastructs"
+	"github.com/san-lab/immudb-tests/transactions"
 )
-
-var InstitutionName string
-var CounterpartBanks []string
-
-var LibP2PNode *Node
-var StateClient client.ImmuClient
-var MsgsClient client.ImmuClient
-
-const StateDB = "defaultdb"
-const MsgsDB = "msgdb"
 
 func initDB(ip string, port int) {
 	// even though the server address and port are defaults, setting them as a reference
@@ -53,20 +48,30 @@ func initDB(ip string, port int) {
 }
 
 func main() {
-	ipFlag := flag.String("ip", "127.0.0.1", "ip to connect to the ImmuDB instance")
-	portFlag := flag.Int("port", 3322, "port to connect to the ImmuDB instance")
-	topicFlag := flag.String("net", "ImmuDBTopic", "name of the topic for the network")
-	institutionName := flag.String("name", "SampleBank", "name of the financial institution")
+	/*
+		ipFlag := flag.String("ip", "127.0.0.1", "ip to connect to the ImmuDB instance")
+		portFlag := flag.Int("port", 3322, "port to connect to the ImmuDB instance")
+		topicFlag := flag.String("net", "ImmuDBTopic", "name of the topic for the network")
+		institutionName := flag.String("name", "SampleBank", "name of the financial institution")
+	*/
+	configFile := flag.String("config", "config.env", "path to config file")
 	flag.Parse()
+	viper.SetConfigFile(*configFile)
+	viper.ReadInConfig()
 
-	InstitutionName = *institutionName
-	CounterpartBanks = []string{"GreenBank", "RedBank", "BlueBank"}
+	ThisBank.Name = viper.GetString("BANK_NAME")
+	ThisBank.Address = viper.GetString("BANK_ADDRESS")
+	CounterpartBanks["SampleBank"] = "0x1234"
 
-	NET = *topicFlag
-	LibP2PNode, _ := GetNode()
-	LibP2PNode.GetNodeID()
+	blockchainconnector.NETWORK = viper.GetString("NETWORK")
+	blockchainconnector.CHAIN_ID = viper.GetString("CHAIN_ID")
+	blockchainconnector.VERIFIER_ADDRESS = viper.GetString("VERIFIER_ADDRESS")
+	blockchainconnector.PRIV_KEY_FILE = viper.GetString("PRIV_KEY_FILE")
 
-	initDB(*ipFlag, *portFlag)
+	transactions.NET = viper.GetString("LIBP2P_TOPIC")
+	transactions.LibP2PNode, _ = transactions.GetNode()
+
+	initDB(viper.GetString("DB_IP"), viper.GetInt("DB_PORT"))
 
 	// ensure connection is closed
 	defer StateClient.CloseSession(context.Background())
@@ -75,12 +80,3 @@ func main() {
 	// PromptUI to select action
 	TopUI()
 }
-
-// TODO
-
-// connect to blockchain
-// store msg hash, banks and amount
-
-//
-// Important to add a nonce to each transaction at least for the MT messages, otherwise 2 equal messages wont show up on the database....
-//

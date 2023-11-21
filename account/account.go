@@ -1,4 +1,4 @@
-package main
+package account
 
 import (
 	"crypto/sha256"
@@ -48,12 +48,12 @@ func (account *Account) Deposit(amount float32) error {
 // Withdraws an amount from an account
 func (account *Account) Withdraw(amount float32) error {
 	if !account.Suspended {
-		if amount <= account.Balance {
-			account.Balance -= amount
-		} else {
-			return errors.New("balance cannot be negative")
-		}
-
+		// Will allow negative balances for a moment
+		// if amount <= account.Balance {
+		account.Balance -= amount
+		// } else {
+		//	  return errors.New("balance cannot be negative")
+		// }
 	} else {
 		return errors.New("account suspended: operation not performed")
 	}

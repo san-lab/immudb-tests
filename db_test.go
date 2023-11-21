@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"testing"
 
 	"github.com/codenotary/immudb/pkg/api/schema"
 	"github.com/codenotary/immudb/pkg/client"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 var ip = "127.0.0.1"
@@ -54,4 +57,22 @@ func TestDBConnection(t *testing.T) {
 func TestTimestamp(t *testing.T) {
 	timestamp := time.Now()
 	fmt.Println(timestamp.String())
+}
+
+func TestReadKey(t *testing.T) {
+	privKeyBytes, err := os.ReadFile("config/priv_key.txt")
+	fmt.Println(err, string(privKeyBytes))
+	/*
+		privKey := new(datastructs.PrivateKey)
+		err = json.Unmarshal(privKeyBytes, privKey)
+		if err != nil {
+			return nil, err
+		}
+	*/
+
+	privateKey, err := crypto.HexToECDSA(string(privKeyBytes))
+	fmt.Println(err, privateKey)
+	publicKey := privateKey.Public()
+	publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
+	fmt.Println(err, publicKeyECDSA)
 }

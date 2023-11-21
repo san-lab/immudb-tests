@@ -4,6 +4,10 @@ import (
 	"fmt"
 
 	"github.com/manifoldco/promptui"
+	account "github.com/san-lab/immudb-tests/account"
+	. "github.com/san-lab/immudb-tests/datastructs"
+	sdk "github.com/san-lab/immudb-tests/immudbsdk"
+	"github.com/san-lab/immudb-tests/transactions"
 )
 
 const UP = "UP"
@@ -44,7 +48,7 @@ func TopUI() {
 
 		items = append(items, EXIT)
 		prompt := promptui.Select{
-			Label: InstitutionName + " - Actions",
+			Label: ThisBank.Name + " - Actions",
 			Items: items,
 		}
 		_, it, _ := prompt.Run()
@@ -52,16 +56,18 @@ func TopUI() {
 		switch it {
 
 		case bankInfo:
-			PrintBankInfo()
+			transactions.PrintBankInfo()
 
 		case findCounterpartBanks:
-			err := FindCounterpartBanks()
+			err := transactions.FindCounterpartBanks()
 			if err != nil {
 				fmt.Println(err)
 			}
 
 		case seeCounterpartBanks:
-			fmt.Println("Current list of banks: ", CounterpartBanks)
+			for k, v := range CounterpartBanks {
+				fmt.Printf("| %s : %s\n", k, v)
+			}
 
 		case interBankTx:
 			pr := promptui.Prompt{Label: "Introduce the sender of the transaction", Default: "test_userFrom"}
@@ -71,14 +77,18 @@ func TopUI() {
 			pr = promptui.Prompt{Label: "Introduce the recipient of the transaction", Default: "test_userTo"}
 			userTo, _ := pr.Run()
 
-			// Substitute by discoveredCounterpartBanks
+			// Grab the list of bank names, and have the user pick from it
+			var CounterpartBankNames []string
+			for k, _ := range CounterpartBanks {
+				CounterpartBankNames = append(CounterpartBankNames, k)
+			}
 			prompt := promptui.Select{
 				Label: "Select the bank of the recipient of the transaction",
-				Items: append(CounterpartBanks, UP),
+				Items: append(CounterpartBankNames, UP),
 			}
 			_, bankTo, _ := prompt.Run()
 			if bankTo != UP {
-				err := InterBankTx(userFrom, amount, userTo, bankTo)
+				err := transactions.InterBankTx(userFrom, amount, userTo, bankTo)
 				if err != nil {
 					fmt.Println(err)
 					continue
@@ -93,14 +103,14 @@ func TopUI() {
 			pr = promptui.Prompt{Label: "Introduce the recipient of the transaction", Default: "test_userTo"}
 			userTo, _ := pr.Run()
 
-			err := IntraBankTx(userFrom, amount, userTo)
+			err := transactions.IntraBankTx(userFrom, amount, userTo)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 
 		case currentStateRoot:
-			root, txId, err := CurrentStateRoot()
+			root, txId, err := sdk.CurrentStateRoot()
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -108,25 +118,25 @@ func TopUI() {
 			fmt.Printf("Current state root: 0x%x (last tx id: %d)", root, txId)
 
 		case printAllAccounts:
-			accounts, _ := GetAllAccounts()
-			PrintAllAccounts(accounts)
+			accounts, _ := account.GetAllAccounts()
+			account.PrintAllAccounts(accounts)
 
 		case printAccount:
 			pr := promptui.Prompt{Label: "Introduce the IBAN of the new account", Default: "test_IBAN"}
 			userIban, _ := pr.Run()
 
-			account, err := GetAccount(userIban)
+			acc, err := account.GetAccount(userIban)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			account.PrintAccount(true)
+			acc.PrintAccount(true)
 
 		case txById:
 			pr := promptui.Prompt{Label: "Introduce the ID of the transaction", Default: "0"}
 			id, _ := pr.Run()
 
-			tx, err := TxById(id)
+			tx, err := sdk.TxById(id)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -142,7 +152,7 @@ func TopUI() {
 			pr = promptui.Prompt{Label: "Introduce the owner name of the new account", Default: "test_ownerName"}
 			userName, _ := pr.Run()
 
-			err := CreateAccount(userIban, userName)
+			err := account.CreateAccount(userIban, userName)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -151,7 +161,7 @@ func TopUI() {
 		case manageAccount:
 			pr := promptui.Prompt{Label: "Introduce the IBAN of the account to manage", Default: "test_IBAN"}
 			userIban, _ := pr.Run()
-			_, err := VerifiedGet(userIban)
+			_, err := sdk.VerifiedGet(userIban)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -164,7 +174,7 @@ func TopUI() {
 			pr = promptui.Prompt{Label: "Introduce the value", Default: "test_value"}
 			value, _ := pr.Run()
 
-			err := VerifiedSet(key, value)
+			err := sdk.VerifiedSet(key, value)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -174,7 +184,7 @@ func TopUI() {
 			pr := promptui.Prompt{Label: "Introduce the key", Default: "test_key"}
 			key, _ := pr.Run()
 
-			entry, err := VerifiedGet(key)
+			entry, err := sdk.VerifiedGet(key)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -182,7 +192,7 @@ func TopUI() {
 			fmt.Printf("Sucessfully got verified entry: ('%s', '%s') @ tx %d\n", entry.Key, entry.Value, entry.Tx)
 
 		case health:
-			health, err := Health()
+			health, err := sdk.Health()
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -190,22 +200,22 @@ func TopUI() {
 			fmt.Printf("Health: Pending requests %d, Last request completed at %d\n", health.PendingRequests, health.LastRequestCompletedAt)
 
 		case seeMessagesDB:
-			msgentries, err := GetAllMessages()
+			msgentries, err := transactions.GetAllMessages()
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			PrintAllMessages(msgentries)
+			transactions.PrintAllMessages(msgentries)
 
 		case seeMessageByHash:
 			pr := promptui.Prompt{Label: "Introduce the hash of the message", Default: "test_hash"}
 			hash, _ := pr.Run()
-			message, err := GetMessage(hash)
+			message, err := transactions.GetMessage(hash)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			PrintMessage(message, true)
+			transactions.PrintMessage(message, true)
 
 		case EXIT:
 			return
@@ -230,7 +240,7 @@ func ManageAccountUI(userIban string) {
 		switch it {
 
 		case printAccount:
-			account, err := GetAccount(userIban)
+			account, err := account.GetAccount(userIban)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -241,7 +251,7 @@ func ManageAccountUI(userIban string) {
 			pr := promptui.Prompt{Label: "Introduce the new balance of the account", Default: "1"}
 			balance, _ := pr.Run()
 
-			err := SetAccountBalance(userIban, balance)
+			err := account.SetAccountBalance(userIban, balance)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -251,7 +261,7 @@ func ManageAccountUI(userIban string) {
 			pr := promptui.Prompt{Label: "Introduce the amount to deposit to the account", Default: "1"}
 			amount, _ := pr.Run()
 
-			err := DepositToAccount(userIban, amount)
+			err := account.DepositToAccount(userIban, amount)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -260,28 +270,28 @@ func ManageAccountUI(userIban string) {
 		case withdrawFromAccount:
 			pr := promptui.Prompt{Label: "Introduce the amount to withdraw from the account", Default: "1"}
 			amount, _ := pr.Run()
-			err := WithdrawFromAccount(userIban, amount)
+			err := account.WithdrawFromAccount(userIban, amount)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 
 		case suspendAccount:
-			err := SuspendAccount(userIban)
+			err := account.SuspendAccount(userIban)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 
 		case unsuspendAccount:
-			err := UnsuspendAccount(userIban)
+			err := account.UnsuspendAccount(userIban)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 
 		case getAccountDigest:
-			accountDigest, err := GetAccountDigest(userIban)
+			accountDigest, err := account.GetAccountDigest(userIban)
 			if err != nil {
 				fmt.Println(err)
 				continue

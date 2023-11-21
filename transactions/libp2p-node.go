@@ -1,4 +1,4 @@
-package main
+package transactions
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 )
 
 var NET string
+var LibP2PNode *Node
 
 // MPCNode represents a subscription to a single PubSub topic. Messages
 // can be published to the topic with MPCNode.Publish, and received
@@ -26,7 +27,6 @@ type Node struct {
 
 type GenericMessage struct {
 	MessageType string
-	Sender      string
 	Data        []byte
 }
 
@@ -53,35 +53,11 @@ func (node *Node) ProcessMessage(msg *pubsub.Message) {
 		fmt.Println("bad frame:", err)
 		return
 	}
-
-	switch genmsg.MessageType {
-
-	case MT103_string:
-		txMsg := new(MT103Message)
-		err := json.Unmarshal(genmsg.Data, txMsg)
-		if err != nil {
-			fmt.Println("bad frame:", err)
-			return
-		}
-		ProcessInterBankTx(txMsg)
-
-	case BankDiscoveryMessage_string:
-		discoveryMsg := new(BankDiscoveryMessage)
-		err := json.Unmarshal(genmsg.Data, discoveryMsg)
-		if err != nil {
-			fmt.Println("bad frame:", err)
-			return
-		}
-		ProcessBankDiscovery(discoveryMsg)
-
-	default:
-		fmt.Println("u shouldnt be here...")
-	}
-
+	HandleMessage(genmsg.MessageType, genmsg.Data)
 }
 
 func (node *Node) SendMessage(dataType string, data []byte) {
-	genmsg := GenericMessage{MessageType: dataType, Sender: InstitutionName, Data: data}
+	genmsg := GenericMessage{MessageType: dataType, Data: data}
 	b, _ := json.Marshal(genmsg)
 	node.topic.Publish(context.Background(), b)
 }
