@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/manifoldco/promptui"
 	account "github.com/san-lab/immudb-tests/account"
+	"github.com/san-lab/immudb-tests/blockchainconnector"
 	. "github.com/san-lab/immudb-tests/datastructs"
 	sdk "github.com/san-lab/immudb-tests/immudbsdk"
 	"github.com/san-lab/immudb-tests/transactions"
@@ -41,10 +44,18 @@ const txById = "Get transaction by ID"
 const seeMessagesDB = "See messages database...WIP"
 const seeMessageByHash = "See a message by its hash...WIP"
 
+const onChainOps = "Chain operations...for testing"
+const getStateCheckByBlockNumber = "getStateCheckByBlockNumber"
+const getStateCheckByIndex = "getStateCheckByIndex"
+const getPendingSubmissions = "getPendingSubmissions"
+const submitHash = "submitHash"
+const submitPreimage = "submitPreimage"
+const getBlockNumber = "getBlockNumber"
+
 func TopUI() {
 	for {
 		items := []string{bankInfo, findCounterpartBanks, seeCounterpartBanks, printAllAccounts, printAccount, currentStateRoot, intraBankTx, interBankTx,
-			createAccount, manageAccount, txById, health, vSet, vGet, seeMessagesDB, seeMessageByHash}
+			createAccount, manageAccount, txById, health, vSet, vGet, seeMessagesDB, seeMessageByHash, onChainOps}
 
 		items = append(items, EXIT)
 		prompt := promptui.Select{
@@ -66,7 +77,9 @@ func TopUI() {
 
 		case seeCounterpartBanks:
 			for k, v := range CounterpartBanks {
-				fmt.Printf("| %s : %s\n", k, v)
+				if k != ThisBank.Name {
+					fmt.Printf("| %s : %s\n", k, v)
+				}
 			}
 
 		case interBankTx:
@@ -115,7 +128,7 @@ func TopUI() {
 				fmt.Println(err)
 				continue
 			}
-			fmt.Printf("Current state root: 0x%x (last tx id: %d)", root, txId)
+			fmt.Printf("Current state root: 0x%x (last tx id: %d)\n", root, txId)
 
 		case printAllAccounts:
 			accounts, _ := account.GetAllAccounts()
@@ -217,6 +230,9 @@ func TopUI() {
 			}
 			transactions.PrintMessage(message, true)
 
+		case onChainOps:
+			BlockchainOperationsUI()
+
 		case EXIT:
 			return
 
@@ -305,4 +321,127 @@ func ManageAccountUI(userIban string) {
 			fmt.Println("u shouldnt be here...")
 		}
 	}
+}
+
+func BlockchainOperationsUI() {
+	for {
+		items := []string{getStateCheckByBlockNumber, getStateCheckByIndex, getPendingSubmissions, submitHash, submitPreimage, getBlockNumber}
+
+		items = append(items, UP)
+		prompt := promptui.Select{
+			Label: "Blockchain Operations - Test",
+			Items: items,
+		}
+		_, it, _ := prompt.Run()
+
+		switch it {
+
+		case getStateCheckByBlockNumber:
+			originatorBank, _ := promptForBankName("Select the originator bank")
+			originatorBank = CounterpartBanks[originatorBank]
+
+			recipientBank, _ := promptForBankName("Select the recipient bank")
+			recipientBank = CounterpartBanks[recipientBank]
+
+			blockNumber, _ := promptForBigInt("Introduce the block number", "0")
+			stateCheck, err := blockchainconnector.GetStateCheckByBlockNumber(originatorBank, recipientBank, blockNumber)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Printf("%+v\n", stateCheck)
+
+		case getStateCheckByIndex:
+			originatorBank, _ := promptForBankName("Select the originator bank")
+			originatorBank = CounterpartBanks[originatorBank]
+
+			recipientBank, _ := promptForBankName("Select the recipient bank")
+			recipientBank = CounterpartBanks[recipientBank]
+
+			index, _ := promptForBigInt("Introduce the index", "0")
+			stateCheck, err := blockchainconnector.GetStateCheckByIndex(originatorBank, recipientBank, index)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Printf("%+v\n", stateCheck)
+
+		case getPendingSubmissions:
+			originatorBank, _ := promptForBankName("Select the originator bank")
+			originatorBank = CounterpartBanks[originatorBank]
+			pendingSubmissions, err := blockchainconnector.GetPendingSubmissions(originatorBank)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println("Pending Submissions:", pendingSubmissions)
+
+		case submitHash:
+			recipientBank, _ := promptForBankName("Select the recipient bank")
+			recipientBank = CounterpartBanks[recipientBank]
+
+			hash, _ := promptForString("Introduce the hash", "")
+			err := blockchainconnector.SubmitHash(recipientBank, []byte(hash))
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+		case submitPreimage:
+			recipientBank, _ := promptForBankName("Select the recipient bank")
+			recipientBank = CounterpartBanks[recipientBank]
+
+			preimage, _ := promptForString("Introduce the preimage", "")
+
+			blockNumber, _ := promptForBigInt("Introduce the block number", "0")
+			err := blockchainconnector.SubmitPreimage(recipientBank, []byte(preimage), blockNumber)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+		case getBlockNumber:
+			blockNumber, err := blockchainconnector.GetBlockNumber()
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println("Block Number:", blockNumber)
+
+		case UP:
+			return
+
+		default:
+			fmt.Println("u shouldnt be here...")
+		}
+	}
+}
+
+func promptForBankName(label string) (string, error) {
+	var CounterpartBankNames []string
+	for k, _ := range CounterpartBanks {
+		CounterpartBankNames = append(CounterpartBankNames, k)
+	}
+	prompt := promptui.Select{
+		Label: label,
+		Items: append(CounterpartBankNames, UP),
+	}
+	_, bank, err := prompt.Run()
+	return bank, err
+}
+
+func promptForBigInt(label, def string) (*big.Int, error) {
+	pr := promptui.Prompt{Label: label, Default: def}
+	numberString, _ := pr.Run()
+	numberBigInt, ok := new(big.Int).SetString(numberString, 10)
+	if !ok {
+		return nil, errors.New("wrong block number format")
+	}
+	return numberBigInt, nil
+}
+
+func promptForString(label, def string) (string, error) {
+	pr := promptui.Prompt{Label: label, Default: def}
+	str, err := pr.Run()
+	return str, err
 }

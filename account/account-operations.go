@@ -13,7 +13,7 @@ func CreateAccount(userIban, userName string) error {
 	// Check if IBAN already in database
 	_, err := GetAndDeserializeAccount(userIban)
 	if err == nil {
-		fmt.Println("User with that IBAN is already in the database")
+		// fmt.Println("User with that IBAN is already in the database")
 		return errors.New("user with that IBAN is already in the database")
 	}
 

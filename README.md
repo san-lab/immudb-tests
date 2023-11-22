@@ -42,5 +42,5 @@ For some reason, the web server still points to the first instance...
 4. Start two ImmuDB clients pointing to the respectives databases
 ```
 ./binary_name
-./binary_name --config config2.env
+./binary_name --config config/config2.env
 ```

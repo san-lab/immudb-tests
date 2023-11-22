@@ -110,18 +110,28 @@ func ProcessBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 
 		// Onboard the discovered bank
 		accName := discoveryMsg.SenderBankName + " - CA"
-		account.CreateAccount(accName, accName)
-		err := account.SetAccountBalance(accName, initialAmount)
+		err := account.CreateAccount(accName, accName)
 		if err != nil {
-			fmt.Println("cannot set CA balance")
+			// It means the bank has been onboarded in the DB already
+			// fmt.Println(err)
+			return err
+		}
+		err = account.SetAccountBalance(accName, initialAmount)
+		if err != nil {
+			fmt.Println(err, "cannot set CA balance")
 		}
 
 		// Assume the other bank has done the same, and create a mirror of our account
 		accName = ThisBank.Name + "@" + discoveryMsg.SenderBankName + " - Mirror"
-		account.CreateAccount(accName, accName)
+		err = account.CreateAccount(accName, accName)
+		if err != nil {
+			// It means the bank has been onboarded in the DB already
+			// fmt.Println(err)
+			return err
+		}
 		err = account.SetAccountBalance(accName, initialAmount)
 		if err != nil {
-			fmt.Println("cannot set mirror account balance")
+			fmt.Println(err, "cannot set mirror account balance")
 		}
 
 	} else {

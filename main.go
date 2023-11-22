@@ -54,13 +54,14 @@ func main() {
 		topicFlag := flag.String("net", "ImmuDBTopic", "name of the topic for the network")
 		institutionName := flag.String("name", "SampleBank", "name of the financial institution")
 	*/
-	configFile := flag.String("config", "config.env", "path to config file")
+	configFile := flag.String("config", "config/config.env", "path to config file")
 	flag.Parse()
 	viper.SetConfigFile(*configFile)
 	viper.ReadInConfig()
 
 	ThisBank.Name = viper.GetString("BANK_NAME")
 	ThisBank.Address = viper.GetString("BANK_ADDRESS")
+	CounterpartBanks[ThisBank.Name] = ThisBank.Address
 	CounterpartBanks["SampleBank"] = "0x1234"
 
 	blockchainconnector.NETWORK = viper.GetString("NETWORK")

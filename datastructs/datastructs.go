@@ -7,7 +7,7 @@ import (
 )
 
 var ThisBank NameAddress
-var CounterpartBanks = make(map[string]string)
+var CounterpartBanks = make(map[string]string) // First entry is ThisBank
 
 type NameAddress struct {
 	Name    string
