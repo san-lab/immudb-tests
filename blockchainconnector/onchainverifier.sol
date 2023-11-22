@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.5.0;
 
 contract HashVerification {
     struct StateCheck {
@@ -46,7 +46,7 @@ contract HashVerification {
     }
 
 
-    constructor() {}
+    constructor() public {}
 
     function submitHash(
         address _originatorBank,
@@ -154,6 +154,10 @@ contract HashVerification {
         }
 
         revert("No state check found for the given blockNumber");
+    }
+
+    function version() external pure returns (string memory) {
+        return "1.0.0";
     }
 }
 

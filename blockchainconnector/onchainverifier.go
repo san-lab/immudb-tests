@@ -30,7 +30,7 @@ var (
 
 // OnchainVerifierMetaData contains all meta data concerning the OnchainVerifier contract.
 var OnchainVerifierMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_originatorBank\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_recipientBank\",\"type\":\"address\"}],\"name\":\"getPendingSubmissions\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_originatorBank\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_recipientBank\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"getStateCheckByBlockNumber\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"submittedHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"submittedPreimage\",\"type\":\"bytes32\"},{\"internalType\":\"bool\",\"name\":\"verified\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_originatorBank\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_recipientBank\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getStateCheckByIndex\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"submittedHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"submittedPreimage\",\"type\":\"bytes32\"},{\"internalType\":\"bool\",\"name\":\"verified\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"stateChecks\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"submittedHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"submittedPreimage\",\"type\":\"bytes32\"},{\"internalType\":\"bool\",\"name\":\"verified\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_originatorBank\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_recipientBank\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_hash\",\"type\":\"bytes32\"}],\"name\":\"submitHash\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_originatorBank\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_recipientBank\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_preimage\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"submitPreimage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"constant\":false,\"inputs\":[{\"name\":\"_originatorBank\",\"type\":\"address\"},{\"name\":\"_recipientBank\",\"type\":\"address\"},{\"name\":\"_preimage\",\"type\":\"bytes32\"},{\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"submitPreimage\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_originatorBank\",\"type\":\"address\"},{\"name\":\"_recipientBank\",\"type\":\"address\"},{\"name\":\"_hash\",\"type\":\"bytes32\"}],\"name\":\"submitHash\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"stateChecks\",\"outputs\":[{\"name\":\"submittedHash\",\"type\":\"bytes32\"},{\"name\":\"submittedPreimage\",\"type\":\"bytes32\"},{\"name\":\"verified\",\"type\":\"bool\"},{\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_originatorBank\",\"type\":\"address\"},{\"name\":\"_recipientBank\",\"type\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getStateCheckByIndex\",\"outputs\":[{\"name\":\"submittedHash\",\"type\":\"bytes32\"},{\"name\":\"submittedPreimage\",\"type\":\"bytes32\"},{\"name\":\"verified\",\"type\":\"bool\"},{\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_originatorBank\",\"type\":\"address\"},{\"name\":\"_recipientBank\",\"type\":\"address\"}],\"name\":\"getPendingSubmissions\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_originatorBank\",\"type\":\"address\"},{\"name\":\"_recipientBank\",\"type\":\"address\"},{\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"getStateCheckByBlockNumber\",\"outputs\":[{\"name\":\"submittedHash\",\"type\":\"bytes32\"},{\"name\":\"submittedPreimage\",\"type\":\"bytes32\"},{\"name\":\"verified\",\"type\":\"bool\"},{\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}]",
 }
 
 // OnchainVerifierABI is the input ABI used to generate the binding from.
@@ -373,6 +373,37 @@ func (_OnchainVerifier *OnchainVerifierCallerSession) StateChecks(arg0 common.Ad
 	BlockNumber       *big.Int
 }, error) {
 	return _OnchainVerifier.Contract.StateChecks(&_OnchainVerifier.CallOpts, arg0, arg1, arg2)
+}
+
+// Version is a free data retrieval call binding the contract method 0x54fd4d50.
+//
+// Solidity: function version() view returns(string)
+func (_OnchainVerifier *OnchainVerifierCaller) Version(opts *bind.CallOpts) (string, error) {
+	var out []interface{}
+	err := _OnchainVerifier.contract.Call(opts, &out, "version")
+
+	if err != nil {
+		return *new(string), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
+
+	return out0, err
+
+}
+
+// Version is a free data retrieval call binding the contract method 0x54fd4d50.
+//
+// Solidity: function version() view returns(string)
+func (_OnchainVerifier *OnchainVerifierSession) Version() (string, error) {
+	return _OnchainVerifier.Contract.Version(&_OnchainVerifier.CallOpts)
+}
+
+// Version is a free data retrieval call binding the contract method 0x54fd4d50.
+//
+// Solidity: function version() view returns(string)
+func (_OnchainVerifier *OnchainVerifierCallerSession) Version() (string, error) {
+	return _OnchainVerifier.Contract.Version(&_OnchainVerifier.CallOpts)
 }
 
 // SubmitHash is a paid mutator transaction binding the contract method 0x542686b0.

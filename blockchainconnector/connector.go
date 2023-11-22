@@ -3,6 +3,8 @@ package blockchainconnector
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/hex"
+	"fmt"
 	"math/big"
 	"os"
 
@@ -27,6 +29,9 @@ func GetStateCheckByBlockNumber(originatorBank, recipientBank string, blockNumbe
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
 	instance, err := NewOnchainVerifier(address, client)
+	if err != nil {
+		return nil, err
+	}
 
 	originatorBankAddress := common.HexToAddress(originatorBank)
 	recipientBankAddress := common.HexToAddress(recipientBank)
@@ -50,6 +55,9 @@ func GetStateCheckByIndex(originatorBank, recipientBank string, index *big.Int) 
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
 	instance, err := NewOnchainVerifier(address, client)
+	if err != nil {
+		return nil, err
+	}
 
 	originatorBankAddress := common.HexToAddress(originatorBank)
 	recipientBankAddress := common.HexToAddress(recipientBank)
@@ -73,17 +81,20 @@ func GetPendingSubmissions(originatorBank string) ([]*big.Int, error) {
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
 	instance, err := NewOnchainVerifier(address, client)
+	if err != nil {
+		return nil, err
+	}
 
 	// Recipient must be ThisBank
 	originatorBankAddress := common.HexToAddress(originatorBank)
 	recipientBankAddress := common.HexToAddress(ThisBank.Address)
 
-	pendingSubmissions, err := instance.GetPendingSubmissions(&bind.CallOpts{}, originatorBankAddress, recipientBankAddress)
+	pendingSubmissions, err := instance.GetPendingSubmissions(&bind.CallOpts{From: recipientBankAddress}, originatorBankAddress, recipientBankAddress)
 	return pendingSubmissions, err
 
 }
 
-func SubmitHash(recipientBank string, hash []byte) error {
+func SubmitHash(recipientBank string, hash string) error {
 	client, err := ethclient.Dial(NETWORK)
 	if err != nil {
 		return err
@@ -91,6 +102,9 @@ func SubmitHash(recipientBank string, hash []byte) error {
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
 	instance, err := NewOnchainVerifier(address, client)
+	if err != nil {
+		return err
+	}
 
 	// Originator must be ThisBank
 	originatorBankAddress := common.HexToAddress(ThisBank.Address)
@@ -102,11 +116,15 @@ func SubmitHash(recipientBank string, hash []byte) error {
 		return err
 	}
 
-	_, err = instance.SubmitHash(auth, originatorBankAddress, recipientBankAddress, [32]byte(hash))
+	hashBytes, err := hex.DecodeString(hash)
+	if err != nil {
+		return err
+	}
+	_, err = instance.SubmitHash(auth, originatorBankAddress, recipientBankAddress, [32]byte(hashBytes))
 	return err
 }
 
-func SubmitPreimage(originatorBank string, preimage []byte, blockNumber *big.Int) error {
+func SubmitPreimage(originatorBank string, preimage string, blockNumber *big.Int) error {
 	client, err := ethclient.Dial(NETWORK)
 	if err != nil {
 		return err
@@ -114,6 +132,9 @@ func SubmitPreimage(originatorBank string, preimage []byte, blockNumber *big.Int
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
 	instance, err := NewOnchainVerifier(address, client)
+	if err != nil {
+		return err
+	}
 
 	// Recipient must be ThisBank
 	originatorBankAddress := common.HexToAddress(originatorBank)
@@ -125,7 +146,11 @@ func SubmitPreimage(originatorBank string, preimage []byte, blockNumber *big.Int
 		return err
 	}
 
-	_, err = instance.SubmitPreimage(auth, originatorBankAddress, recipientBankAddress, [32]byte(preimage), blockNumber)
+	preimageBytes, err := hex.DecodeString(preimage)
+	if err != nil {
+		return err
+	}
+	_, err = instance.SubmitPreimage(auth, originatorBankAddress, recipientBankAddress, [32]byte(preimageBytes), blockNumber)
 	return err
 }
 
@@ -141,6 +166,22 @@ func GetBlockNumber() (*big.Int, error) {
 	}
 
 	return header.Number, nil
+}
+
+func Version() (string, error) {
+	client, err := ethclient.Dial(NETWORK)
+	if err != nil {
+		return "", err
+	}
+
+	address := common.HexToAddress(VERIFIER_ADDRESS)
+	instance, err := NewOnchainVerifier(address, client)
+	if err != nil {
+		return "", err
+	}
+
+	version, err := instance.Version(&bind.CallOpts{})
+	return version, err
 }
 
 func getAuth(client *ethclient.Client) (*bind.TransactOpts, error) {
@@ -190,4 +231,9 @@ func getAuth(client *ethclient.Client) (*bind.TransactOpts, error) {
 	auth.GasPrice = gasPrice
 
 	return auth, nil
+}
+
+func PrintStateCheck(state *StateCheck) {
+	fmt.Printf("{ Submitted Hash: %x\nSubmitted Preimage: %x\nVerified?: %t\nBlock Number: %d }\n",
+		state.SubmittedHash, state.SubmittedPreimage, state.Verified, state.BlockNumber)
 }

@@ -51,6 +51,7 @@ const getPendingSubmissions = "getPendingSubmissions"
 const submitHash = "submitHash"
 const submitPreimage = "submitPreimage"
 const getBlockNumber = "getBlockNumber"
+const getVersion = "getVersion"
 
 func TopUI() {
 	for {
@@ -325,7 +326,7 @@ func ManageAccountUI(userIban string) {
 
 func BlockchainOperationsUI() {
 	for {
-		items := []string{getStateCheckByBlockNumber, getStateCheckByIndex, getPendingSubmissions, submitHash, submitPreimage, getBlockNumber}
+		items := []string{getStateCheckByBlockNumber, getStateCheckByIndex, getPendingSubmissions, submitHash, submitPreimage, getBlockNumber, getVersion}
 
 		items = append(items, UP)
 		prompt := promptui.Select{
@@ -349,7 +350,7 @@ func BlockchainOperationsUI() {
 				fmt.Println(err)
 				continue
 			}
-			fmt.Printf("%+v\n", stateCheck)
+			blockchainconnector.PrintStateCheck(stateCheck)
 
 		case getStateCheckByIndex:
 			originatorBank, _ := promptForBankName("Select the originator bank")
@@ -364,7 +365,7 @@ func BlockchainOperationsUI() {
 				fmt.Println(err)
 				continue
 			}
-			fmt.Printf("%+v\n", stateCheck)
+			blockchainconnector.PrintStateCheck(stateCheck)
 
 		case getPendingSubmissions:
 			originatorBank, _ := promptForBankName("Select the originator bank")
@@ -381,20 +382,21 @@ func BlockchainOperationsUI() {
 			recipientBank = CounterpartBanks[recipientBank]
 
 			hash, _ := promptForString("Introduce the hash", "")
-			err := blockchainconnector.SubmitHash(recipientBank, []byte(hash))
+
+			err := blockchainconnector.SubmitHash(recipientBank, hash)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 
 		case submitPreimage:
-			recipientBank, _ := promptForBankName("Select the recipient bank")
-			recipientBank = CounterpartBanks[recipientBank]
+			originatorBank, _ := promptForBankName("Select the originator bank")
+			originatorBank = CounterpartBanks[originatorBank]
 
 			preimage, _ := promptForString("Introduce the preimage", "")
 
 			blockNumber, _ := promptForBigInt("Introduce the block number", "0")
-			err := blockchainconnector.SubmitPreimage(recipientBank, []byte(preimage), blockNumber)
+			err := blockchainconnector.SubmitPreimage(originatorBank, preimage, blockNumber)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -407,6 +409,14 @@ func BlockchainOperationsUI() {
 				continue
 			}
 			fmt.Println("Block Number:", blockNumber)
+
+		case getVersion:
+			version, err := blockchainconnector.Version()
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println("Version:", version)
 
 		case UP:
 			return

@@ -12,7 +12,12 @@ import (
 
 	"github.com/codenotary/immudb/pkg/api/schema"
 	"github.com/codenotary/immudb/pkg/client"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/san-lab/immudb-tests/blockchainconnector"
+	"github.com/spf13/viper"
 )
 
 var ip = "127.0.0.1"
@@ -75,4 +80,75 @@ func TestReadKey(t *testing.T) {
 	publicKey := privateKey.Public()
 	publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
 	fmt.Println(err, publicKeyECDSA)
+}
+
+func TestGetPendingSubmissions(t *testing.T) {
+	var NETWORK string
+	//var CHAIN_ID string
+	var VERIFIER_ADDRESS string
+	//var PRIV_KEY_FILE string
+
+	viper.SetConfigFile("config/config.env")
+	viper.ReadInConfig()
+
+	//ThisBankName := viper.GetString("BANK_NAME")
+	ThisBankAddress := viper.GetString("BANK_ADDRESS")
+
+	NETWORK = viper.GetString("NETWORK")
+	//CHAIN_ID = viper.GetString("CHAIN_ID")
+	VERIFIER_ADDRESS = viper.GetString("VERIFIER_ADDRESS")
+	//PRIV_KEY_FILE = viper.GetString("PRIV_KEY_FILE")
+
+	originatorBank := "0x6e7786c888Fe08E9360E830bC5806eca6186fB89"
+
+	client, err := ethclient.Dial(NETWORK)
+	if err != nil {
+		fmt.Println("dial", err)
+	}
+
+	address := common.HexToAddress(VERIFIER_ADDRESS)
+	instance, err := blockchainconnector.NewOnchainVerifier(address, client)
+	if err != nil {
+		fmt.Println("instance", err)
+	}
+
+	// Recipient must be ThisBank
+	originatorBankAddress := common.HexToAddress(originatorBank)
+	recipientBankAddress := common.HexToAddress(ThisBankAddress)
+
+	pendingSubmissions, err := instance.GetPendingSubmissions(&bind.CallOpts{From: recipientBankAddress}, originatorBankAddress, recipientBankAddress)
+	fmt.Println(err, pendingSubmissions)
+	//return pendingSubmissions, err
+
+}
+
+func TestVersion(t *testing.T) {
+	var NETWORK string
+	//var CHAIN_ID string
+	var VERIFIER_ADDRESS string
+	//var PRIV_KEY_FILE string
+
+	viper.SetConfigFile("config/config.env")
+	viper.ReadInConfig()
+
+	NETWORK = viper.GetString("NETWORK")
+	//CHAIN_ID = viper.GetString("CHAIN_ID")
+	VERIFIER_ADDRESS = viper.GetString("VERIFIER_ADDRESS")
+	//PRIV_KEY_FILE = viper.GetString("PRIV_KEY_FILE")
+
+	client, err := ethclient.Dial(NETWORK)
+	if err != nil {
+		fmt.Println("dial", err)
+	}
+
+	address := common.HexToAddress(VERIFIER_ADDRESS)
+	instance, err := blockchainconnector.NewOnchainVerifier(address, client)
+	if err != nil {
+		fmt.Println("instance", err)
+	}
+
+	version, err := instance.Version(&bind.CallOpts{})
+	fmt.Println(err, version)
+	//return pendingSubmissions, err
+
 }
