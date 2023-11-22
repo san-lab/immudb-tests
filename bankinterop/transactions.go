@@ -1,6 +1,7 @@
-package transactions
+package bankinterop
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,58 +12,32 @@ import (
 	sdk "github.com/san-lab/immudb-tests/immudbsdk"
 )
 
-func InterBankTx(userFrom, amount, userTo, bankTo string) error { // TODO maybe another struct for the parameters
-	err := account.WithdrawFromAccount(userFrom, amount)
-	if err != nil {
-		return err
-	}
+const MT103_MESSAGE = "MT103"
+const BANK_DISCOVERY_MESSAGE = "BankDiscoveryMessage"
 
-	// Send event to the topic and store it in MsgsDB
-	txmsg := &MT103Message{TimeIndication: time.Now().String(), OrderingInstitution: ThisBank.Name, OrderingCustomer: userFrom, BeneficiaryInstitution: bankTo, BeneficiaryCustomer: userTo, Amount: amount}
-	bytes, err := json.Marshal(txmsg)
-	if err != nil {
-		return err
-	}
-	hash, err := sdk.StoreInMsgsDB(txmsg)
-	if err != nil {
-		return err
-	}
+const QUESTION = "question"
+const ANSWER = "answer"
 
-	// Replicate what the other bank should do with our correspondent account
-	mirrorAccount := ThisBank.Name + "@" + bankTo + " - Mirror"
-	err = account.WithdrawFromAccount(mirrorAccount, amount)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Hash of the message sent:", hash)
-	LibP2PNode.SendMessage(MT103_string, bytes)
-	return nil
+type BankDiscoveryMessage struct {
+	Type              string // to prevent infinite loop
+	SenderBankName    string
+	SenderBankAddress string
 }
 
-// When receiveing a transaction
-func ProcessInterBankTx(txmsg *MT103Message) error {
-	if !validAndAddressedToUs(txmsg) {
-		return errors.New("received transaction message is invalid")
-	}
-	hash, err := sdk.StoreInMsgsDB(txmsg)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Hash of the message received:", hash)
-	err = account.DepositToAccount(txmsg.BeneficiaryCustomer, txmsg.Amount)
-	if err != nil {
-		return err
-	}
+// MT103-like message
+type MT103Message struct {
+	TxReferenceNumber      string
+	TimeIndication         string
+	BankOperationCode      string
+	ValueDate              string // always today?
+	Currency               string
+	ExchangeRate           string
+	OrderingInstitution    string
+	BeneficiaryInstitution string
 
-	// Move funds from ordering bank correspondent account
-	correspondentAccount := txmsg.OrderingInstitution + " - CA"
-	err = account.WithdrawFromAccount(correspondentAccount, txmsg.Amount)
-	if err != nil {
-		return err
-	}
-
-	return err
+	OrderingCustomer    string // Sender IBAN
+	BeneficiaryCustomer string // Recipient IBAN
+	Amount              string
 }
 
 func IntraBankTx(userFrom, amount, userTo string) error {
@@ -75,8 +50,62 @@ func IntraBankTx(userFrom, amount, userTo string) error {
 	return err
 }
 
+func InterBankTx(userFrom, amount, userTo, bankTo string) error { // TODO maybe another struct for the parameters
+	err := account.WithdrawFromAccount(userFrom, amount)
+	if err != nil {
+		return err
+	}
+
+	// Send event to the topic and store it in MsgsDB
+	txmsg := &MT103Message{TimeIndication: time.Now().String(), OrderingInstitution: THIS_BANK.Name, OrderingCustomer: userFrom, BeneficiaryInstitution: bankTo, BeneficiaryCustomer: userTo, Amount: amount}
+	bytes, err := json.Marshal(txmsg)
+	if err != nil {
+		return err
+	}
+	hash, err := StoreInMsgsDB(txmsg)
+	if err != nil {
+		return err
+	}
+
+	// Replicate what the other bank should do with our correspondent account
+	mirrorAccount := THIS_BANK.Name + bankTo + "IBAN"
+	err = account.WithdrawFromAccount(mirrorAccount, amount)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Hash of the message sent:", hash)
+	LIBP2P_NODE.SendMessage(MT103_MESSAGE, bytes)
+	return nil
+}
+
+// When receiveing a transaction
+func ProcessInterBankTx(txmsg *MT103Message) error {
+	if !validAndAddressedToUs(txmsg) {
+		return errors.New("received transaction message is invalid")
+	}
+	hash, err := StoreInMsgsDB(txmsg)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Hash of the message received:", hash)
+	err = account.DepositToAccount(txmsg.BeneficiaryCustomer, txmsg.Amount)
+	if err != nil {
+		return err
+	}
+
+	// Move funds from ordering bank correspondent account
+	correspondentAccount := txmsg.OrderingInstitution + "IBAN"
+	err = account.WithdrawFromAccount(correspondentAccount, txmsg.Amount)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
 func validAndAddressedToUs(txmsg *MT103Message) bool {
-	if txmsg.BeneficiaryInstitution != ThisBank.Name {
+	if txmsg.BeneficiaryInstitution != THIS_BANK.Name {
 		return false
 	}
 
@@ -90,48 +119,38 @@ func validAndAddressedToUs(txmsg *MT103Message) bool {
 }
 
 func FindCounterpartBanks() error {
-	discoveryMsg := &BankDiscoveryMessage{Type: Question, SenderBankName: ThisBank.Name, SenderBankAddress: ThisBank.Address}
+	discoveryMsg := &BankDiscoveryMessage{Type: QUESTION, SenderBankName: THIS_BANK.Name, SenderBankAddress: THIS_BANK.Address}
 	bytes, err := json.Marshal(discoveryMsg)
 	if err != nil {
 		return err
 	}
-	LibP2PNode.SendMessage(BankDiscoveryMessage_string, bytes)
+	LIBP2P_NODE.SendMessage(BANK_DISCOVERY_MESSAGE, bytes)
 	return nil
 }
 
 func ProcessBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 	// Pick the other bank name
-	_, set := CounterpartBanks[discoveryMsg.SenderBankName]
+	_, set := COUNTERPART_BANKS[discoveryMsg.SenderBankName]
 	if !set {
-		initialAmount := "100"
+		initialAmount := float32(100.0)
 
 		// Register he discovered bank
-		CounterpartBanks[discoveryMsg.SenderBankName] = discoveryMsg.SenderBankAddress
+		COUNTERPART_BANKS[discoveryMsg.SenderBankName] = discoveryMsg.SenderBankAddress
 
 		// Onboard the discovered bank
-		accName := discoveryMsg.SenderBankName + " - CA"
-		err := account.CreateAccount(accName, accName)
+		err := account.CreateAccount("", discoveryMsg.SenderBankName+"IBAN", discoveryMsg.SenderBankName, "", discoveryMsg.SenderBankName, initialAmount, true, false)
 		if err != nil {
 			// It means the bank has been onboarded in the DB already
 			// fmt.Println(err)
 			return err
-		}
-		err = account.SetAccountBalance(accName, initialAmount)
-		if err != nil {
-			fmt.Println(err, "cannot set CA balance")
 		}
 
 		// Assume the other bank has done the same, and create a mirror of our account
-		accName = ThisBank.Name + "@" + discoveryMsg.SenderBankName + " - Mirror"
-		err = account.CreateAccount(accName, accName)
+		err = account.CreateAccount("", THIS_BANK.Name+discoveryMsg.SenderBankName+"IBAN", discoveryMsg.SenderBankName, "", discoveryMsg.SenderBankName, initialAmount, false, true)
 		if err != nil {
 			// It means the bank has been onboarded in the DB already
 			// fmt.Println(err)
 			return err
-		}
-		err = account.SetAccountBalance(accName, initialAmount)
-		if err != nil {
-			fmt.Println(err, "cannot set mirror account balance")
 		}
 
 	} else {
@@ -139,13 +158,13 @@ func ProcessBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 	}
 
 	// Answer if needed
-	if discoveryMsg.Type == Question {
-		discoveryAnswer := &BankDiscoveryMessage{Type: Answer, SenderBankName: ThisBank.Name, SenderBankAddress: ThisBank.Address}
+	if discoveryMsg.Type == QUESTION {
+		discoveryAnswer := &BankDiscoveryMessage{Type: ANSWER, SenderBankName: THIS_BANK.Name, SenderBankAddress: THIS_BANK.Address}
 		bytes, err := json.Marshal(discoveryAnswer)
 		if err != nil {
 			return err
 		}
-		LibP2PNode.SendMessage(BankDiscoveryMessage_string, bytes)
+		LIBP2P_NODE.SendMessage(BANK_DISCOVERY_MESSAGE, bytes)
 	}
 	return nil
 }
@@ -153,7 +172,7 @@ func ProcessBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 func HandleMessage(msgtype string, data []byte) {
 	switch msgtype {
 
-	case MT103_string:
+	case MT103_MESSAGE:
 		txMsg := new(MT103Message)
 		err := json.Unmarshal(data, txMsg)
 		if err != nil {
@@ -162,7 +181,7 @@ func HandleMessage(msgtype string, data []byte) {
 		}
 		ProcessInterBankTx(txMsg)
 
-	case BankDiscoveryMessage_string:
+	case BANK_DISCOVERY_MESSAGE:
 		discoveryMsg := new(BankDiscoveryMessage)
 		err := json.Unmarshal(data, discoveryMsg)
 		if err != nil {
@@ -204,17 +223,28 @@ func GetAllMessages() ([]*MT103Message, error) {
 	return messages, nil
 }
 
+func StoreInMsgsDB(txmsg *MT103Message) (string, error) {
+	value, err := json.Marshal(txmsg)
+	if err != nil {
+		return "", err
+	}
+	hash := sha256.Sum256(value)
+	key := fmt.Sprintf("0x%x", hash[:])
+	err = sdk.VerifiedSetMsg(key, string(value))
+	return key, err
+}
+
 func PrintBankInfo() {
-	fmt.Println("| Bank Name:", ThisBank.Name)
-	fmt.Println("| Bank Address:", ThisBank.Address)
-	fmt.Println("| ImmuDB instance running on IP:", StateClient.GetOptions().Address)
-	fmt.Println("| ImmuDB instance running on port:", StateClient.GetOptions().Port)
+	fmt.Println("| Bank Name:", THIS_BANK.Name)
+	fmt.Println("| Bank Address:", THIS_BANK.Address)
+	fmt.Println("| ImmuDB instance running on IP:", STATE_CLIENT.GetOptions().Address)
+	fmt.Println("| ImmuDB instance running on port:", STATE_CLIENT.GetOptions().Port)
 	fmt.Println("| ...")
 }
 
 func PrintMessage(mtmsg *MT103Message, spacing bool) {
 	incOutGoing := "Outgoing message"
-	if mtmsg.BeneficiaryInstitution == ThisBank.Name {
+	if mtmsg.BeneficiaryInstitution == THIS_BANK.Name {
 		incOutGoing = "Incoming message"
 	}
 	if spacing {

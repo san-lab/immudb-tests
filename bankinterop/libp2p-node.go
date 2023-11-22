@@ -1,4 +1,4 @@
-package transactions
+package bankinterop
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 var NET string
-var LibP2PNode *Node
+var LIBP2P_NODE *Node
 
 // MPCNode represents a subscription to a single PubSub topic. Messages
 // can be published to the topic with MPCNode.Publish, and received

@@ -1,4 +1,4 @@
-package transactions
+package bankinterop
 
 import (
 	"context"
@@ -15,10 +15,10 @@ import (
 )
 
 // DiscoveryInterval is how often we re-publish our mDNS records.
-const DiscoveryInterval = time.Hour
+const DISCOVERY_INTERVAL = time.Hour
 
 // DiscoveryServiceTag is used in our mDNS advertisements to discover other chat peers.
-const DiscoveryServiceTag = "ImmuDBNet"
+const DISCOVERY_SERVICE_TAG = "ImmuDBNet"
 
 // LibP2P Host
 var h host.Host
@@ -93,6 +93,6 @@ func (n *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 // This lets us automatically discover peers on the same LAN and connect to them.
 func setupDiscovery(h host.Host) error {
 	// setup mDNS discovery to find local peers
-	s := mdns.NewMdnsService(h, DiscoveryServiceTag, &discoveryNotifee{h: h})
+	s := mdns.NewMdnsService(h, DISCOVERY_SERVICE_TAG, &discoveryNotifee{h: h})
 	return s.Start()
 }

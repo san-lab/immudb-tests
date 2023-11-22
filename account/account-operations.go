@@ -9,17 +9,19 @@ import (
 	sdk "github.com/san-lab/immudb-tests/immudbsdk"
 )
 
-func CreateAccount(userIban, userName string) error {
+const CA = "ca"
+const MIRROR = "mirror"
+
+func CreateAccount(bic, iban, holder, currency, cABank string, balance float32, isCA, isMirror bool) error {
 	// Check if IBAN already in database
-	_, err := GetAndDeserializeAccount(userIban)
+	_, err := GetAndDeserializeAccount(iban)
 	if err == nil {
-		// fmt.Println("User with that IBAN is already in the database")
-		return errors.New("user with that IBAN is already in the database")
+		return errors.New("account with that IBAN is already in the database")
 	}
 
-	accountState := SetAccount("", userIban, 0, userName, "")
+	accountState := SetAccount(bic, iban, holder, currency, cABank, balance, isCA, isMirror)
 
-	err = SerializeAndSetAccount(userIban, accountState)
+	err = SerializeAndSetAccount(iban, accountState)
 	return err
 }
 
@@ -108,13 +110,22 @@ func GetAccount(userIban string) (*Account, error) {
 	return accountState, nil
 }
 
-func GetAccountDigest(userIban string) ([]byte, error) {
+func GetCABank(userIban string) (string, error) {
 	accountState, err := GetAndDeserializeAccount(userIban)
 	if err != nil {
-		return nil, err
+		return "", err
+	}
+	cABank, err := accountState.GetCABank()
+	return cABank, err
+}
+
+func GetAccountDigest(userIban string) (string, error) {
+	accountState, err := GetAndDeserializeAccount(userIban)
+	if err != nil {
+		return "", err
 	}
 	accountDigest, err := accountState.GetDigest()
-	return accountDigest, nil
+	return accountDigest, err
 }
 
 func GetAndDeserializeAccount(key string) (*Account, error) {
@@ -138,7 +149,7 @@ func SerializeAndSetAccount(key string, accountState *Account) error {
 	return err
 }
 
-func GetAllAccounts() ([]*Account, error) {
+func GetAllAccounts(filter string) ([]*Account, error) {
 	entries, err := sdk.GetAllEntries()
 	if err != nil {
 		return nil, err
@@ -150,7 +161,22 @@ func GetAllAccounts() ([]*Account, error) {
 		if err != nil {
 			return accounts, err
 		}
-		accounts = append(accounts, accountState)
+
+		switch filter {
+		case CA:
+			if accountState.IsCA {
+				accounts = append(accounts, accountState)
+			}
+		case MIRROR:
+			if accountState.IsMirror {
+				accounts = append(accounts, accountState)
+			}
+		case "":
+			accounts = append(accounts, accountState)
+		default:
+			fmt.Println("u shouldn be here...")
+		}
+
 	}
 	return accounts, nil
 }

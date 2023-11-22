@@ -21,6 +21,13 @@ var CHAIN_ID string
 var VERIFIER_ADDRESS string
 var PRIV_KEY_FILE string
 
+type StateCheck struct {
+	SubmittedHash     []byte
+	SubmittedPreimage []byte
+	Verified          bool
+	BlockNumber       *big.Int
+}
+
 func GetStateCheckByBlockNumber(originatorBank, recipientBank string, blockNumber *big.Int) (*StateCheck, error) {
 	client, err := ethclient.Dial(NETWORK)
 	if err != nil {
@@ -87,7 +94,7 @@ func GetPendingSubmissions(originatorBank string) ([]*big.Int, error) {
 
 	// Recipient must be ThisBank
 	originatorBankAddress := common.HexToAddress(originatorBank)
-	recipientBankAddress := common.HexToAddress(ThisBank.Address)
+	recipientBankAddress := common.HexToAddress(THIS_BANK.Address)
 
 	pendingSubmissions, err := instance.GetPendingSubmissions(&bind.CallOpts{From: recipientBankAddress}, originatorBankAddress, recipientBankAddress)
 	return pendingSubmissions, err
@@ -107,7 +114,7 @@ func SubmitHash(recipientBank string, hash string) error {
 	}
 
 	// Originator must be ThisBank
-	originatorBankAddress := common.HexToAddress(ThisBank.Address)
+	originatorBankAddress := common.HexToAddress(THIS_BANK.Address)
 	recipientBankAddress := common.HexToAddress(recipientBank)
 
 	// Set signer parameters...
@@ -138,7 +145,7 @@ func SubmitPreimage(originatorBank string, preimage string, blockNumber *big.Int
 
 	// Recipient must be ThisBank
 	originatorBankAddress := common.HexToAddress(originatorBank)
-	recipientBankAddress := common.HexToAddress(ThisBank.Address)
+	recipientBankAddress := common.HexToAddress(THIS_BANK.Address)
 
 	// Set signer parameters...
 	auth, err := getAuth(client)

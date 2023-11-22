@@ -7,10 +7,10 @@ import (
 
 	"github.com/manifoldco/promptui"
 	account "github.com/san-lab/immudb-tests/account"
+	"github.com/san-lab/immudb-tests/bankinterop"
 	"github.com/san-lab/immudb-tests/blockchainconnector"
 	. "github.com/san-lab/immudb-tests/datastructs"
 	sdk "github.com/san-lab/immudb-tests/immudbsdk"
-	"github.com/san-lab/immudb-tests/transactions"
 )
 
 const UP = "UP"
@@ -60,7 +60,7 @@ func TopUI() {
 
 		items = append(items, EXIT)
 		prompt := promptui.Select{
-			Label: ThisBank.Name + " - Actions",
+			Label: THIS_BANK.Name + " - Actions",
 			Items: items,
 		}
 		_, it, _ := prompt.Run()
@@ -68,17 +68,17 @@ func TopUI() {
 		switch it {
 
 		case bankInfo:
-			transactions.PrintBankInfo()
+			bankinterop.PrintBankInfo()
 
 		case findCounterpartBanks:
-			err := transactions.FindCounterpartBanks()
+			err := bankinterop.FindCounterpartBanks()
 			if err != nil {
 				fmt.Println(err)
 			}
 
 		case seeCounterpartBanks:
-			for k, v := range CounterpartBanks {
-				if k != ThisBank.Name {
+			for k, v := range COUNTERPART_BANKS {
+				if k != THIS_BANK.Name {
 					fmt.Printf("| %s : %s\n", k, v)
 				}
 			}
@@ -93,7 +93,7 @@ func TopUI() {
 
 			// Grab the list of bank names, and have the user pick from it
 			var CounterpartBankNames []string
-			for k, _ := range CounterpartBanks {
+			for k, _ := range COUNTERPART_BANKS {
 				CounterpartBankNames = append(CounterpartBankNames, k)
 			}
 			prompt := promptui.Select{
@@ -102,7 +102,7 @@ func TopUI() {
 			}
 			_, bankTo, _ := prompt.Run()
 			if bankTo != UP {
-				err := transactions.InterBankTx(userFrom, amount, userTo, bankTo)
+				err := bankinterop.InterBankTx(userFrom, amount, userTo, bankTo)
 				if err != nil {
 					fmt.Println(err)
 					continue
@@ -117,7 +117,7 @@ func TopUI() {
 			pr = promptui.Prompt{Label: "Introduce the recipient of the transaction", Default: "test_userTo"}
 			userTo, _ := pr.Run()
 
-			err := transactions.IntraBankTx(userFrom, amount, userTo)
+			err := bankinterop.IntraBankTx(userFrom, amount, userTo)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -132,7 +132,7 @@ func TopUI() {
 			fmt.Printf("Current state root: 0x%x (last tx id: %d)\n", root, txId)
 
 		case printAllAccounts:
-			accounts, _ := account.GetAllAccounts()
+			accounts, _ := account.GetAllAccounts("")
 			account.PrintAllAccounts(accounts)
 
 		case printAccount:
@@ -166,7 +166,7 @@ func TopUI() {
 			pr = promptui.Prompt{Label: "Introduce the owner name of the new account", Default: "test_ownerName"}
 			userName, _ := pr.Run()
 
-			err := account.CreateAccount(userIban, userName)
+			err := account.CreateAccount("", userIban, userName, "", "", 0, false, false)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -214,22 +214,22 @@ func TopUI() {
 			fmt.Printf("Health: Pending requests %d, Last request completed at %d\n", health.PendingRequests, health.LastRequestCompletedAt)
 
 		case seeMessagesDB:
-			msgentries, err := transactions.GetAllMessages()
+			msgentries, err := bankinterop.GetAllMessages()
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			transactions.PrintAllMessages(msgentries)
+			bankinterop.PrintAllMessages(msgentries)
 
 		case seeMessageByHash:
 			pr := promptui.Prompt{Label: "Introduce the hash of the message", Default: "test_hash"}
 			hash, _ := pr.Run()
-			message, err := transactions.GetMessage(hash)
+			message, err := bankinterop.GetMessage(hash)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			transactions.PrintMessage(message, true)
+			bankinterop.PrintMessage(message, true)
 
 		case onChainOps:
 			BlockchainOperationsUI()
@@ -313,7 +313,7 @@ func ManageAccountUI(userIban string) {
 				fmt.Println(err)
 				continue
 			}
-			fmt.Printf("Account digest: 0x%x\n", accountDigest)
+			fmt.Println("Account digest: 0x", accountDigest)
 
 		case UP:
 			return
@@ -339,10 +339,10 @@ func BlockchainOperationsUI() {
 
 		case getStateCheckByBlockNumber:
 			originatorBank, _ := promptForBankName("Select the originator bank")
-			originatorBank = CounterpartBanks[originatorBank]
+			originatorBank = COUNTERPART_BANKS[originatorBank]
 
 			recipientBank, _ := promptForBankName("Select the recipient bank")
-			recipientBank = CounterpartBanks[recipientBank]
+			recipientBank = COUNTERPART_BANKS[recipientBank]
 
 			blockNumber, _ := promptForBigInt("Introduce the block number", "0")
 			stateCheck, err := blockchainconnector.GetStateCheckByBlockNumber(originatorBank, recipientBank, blockNumber)
@@ -354,10 +354,10 @@ func BlockchainOperationsUI() {
 
 		case getStateCheckByIndex:
 			originatorBank, _ := promptForBankName("Select the originator bank")
-			originatorBank = CounterpartBanks[originatorBank]
+			originatorBank = COUNTERPART_BANKS[originatorBank]
 
 			recipientBank, _ := promptForBankName("Select the recipient bank")
-			recipientBank = CounterpartBanks[recipientBank]
+			recipientBank = COUNTERPART_BANKS[recipientBank]
 
 			index, _ := promptForBigInt("Introduce the index", "0")
 			stateCheck, err := blockchainconnector.GetStateCheckByIndex(originatorBank, recipientBank, index)
@@ -369,7 +369,7 @@ func BlockchainOperationsUI() {
 
 		case getPendingSubmissions:
 			originatorBank, _ := promptForBankName("Select the originator bank")
-			originatorBank = CounterpartBanks[originatorBank]
+			originatorBank = COUNTERPART_BANKS[originatorBank]
 			pendingSubmissions, err := blockchainconnector.GetPendingSubmissions(originatorBank)
 			if err != nil {
 				fmt.Println(err)
@@ -379,7 +379,7 @@ func BlockchainOperationsUI() {
 
 		case submitHash:
 			recipientBank, _ := promptForBankName("Select the recipient bank")
-			recipientBank = CounterpartBanks[recipientBank]
+			recipientBank = COUNTERPART_BANKS[recipientBank]
 
 			hash, _ := promptForString("Introduce the hash", "")
 
@@ -391,7 +391,7 @@ func BlockchainOperationsUI() {
 
 		case submitPreimage:
 			originatorBank, _ := promptForBankName("Select the originator bank")
-			originatorBank = CounterpartBanks[originatorBank]
+			originatorBank = COUNTERPART_BANKS[originatorBank]
 
 			preimage, _ := promptForString("Introduce the preimage", "")
 
@@ -429,7 +429,7 @@ func BlockchainOperationsUI() {
 
 func promptForBankName(label string) (string, error) {
 	var CounterpartBankNames []string
-	for k, _ := range CounterpartBanks {
+	for k, _ := range COUNTERPART_BANKS {
 		CounterpartBankNames = append(CounterpartBankNames, k)
 	}
 	prompt := promptui.Select{

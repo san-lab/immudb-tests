@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+
+	. "github.com/san-lab/immudb-tests/datastructs"
 )
 
 type Account struct {
@@ -13,17 +15,24 @@ type Account struct {
 	Balance   float32
 	Holder    string
 	Currency  string
+	IsCA      bool
+	IsMirror  bool
+	CABank    string
 }
 
 // Opens a new bank account with the specified parameters
-func SetAccount(bic string, iban string, balance float32, holder string, currency string) *Account {
+func SetAccount(bic, iban, holder, currency, cABank string, balance float32, isCA, isMirror bool) *Account {
 	return &Account{
 		Suspended: false,
 		Bic:       bic,
 		Iban:      iban,
 		Balance:   balance,
 		Holder:    holder,
-		Currency:  currency}
+		Currency:  currency,
+		IsCA:      isCA,
+		IsMirror:  isMirror,
+		CABank:    cABank,
+	}
 }
 
 // Suspends an account
@@ -73,23 +82,46 @@ func (account *Account) SetBalance(newBalance float32) error {
 	return nil
 }
 
-func (account *Account) GetDigest() ([]byte, error) {
-	fields := fmt.Sprintf("%s%s%f%s%s%t", account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+func (account *Account) GetIsCA() bool {
+	return account.IsCA
+}
+
+func (account *Account) GetIsMirror() bool {
+	return account.IsMirror
+}
+
+func (account *Account) GetCABank() (string, error) {
+	if !(account.IsCA || account.IsMirror) {
+		return "", errors.New("account is not CA or Mirror")
+	}
+	return account.CABank, nil
+}
+
+func (account *Account) GetDigest() (string, error) {
+	// TODO: add more fields to the digest (making sure both banks have will have the same values!)
+	fields := fmt.Sprintf("%f", account.Balance)
 	fmt.Println("debug fields:", fields)
+
 	sum := sha256.Sum256([]byte(fields))
-	return sum[:], nil
+	return fmt.Sprintf("%x", sum), nil
 }
 
 // Print account details
 func (account *Account) PrintAccount(spacing bool) {
+	holder := account.Holder
+	if account.IsCA {
+		holder = account.CABank + " - CA"
+	} else if account.IsMirror {
+		holder = THIS_BANK.Name + "@" + account.CABank + " - Mirror"
+	}
 	if spacing {
 		fmt.Println(" -----------------")
 		fmt.Printf("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n| Suspended: %t\n",
-			account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+			account.Iban, holder, account.Balance, account.Currency, account.Bic, account.Suspended)
 		fmt.Println(" -----------------")
 	} else {
 		fmt.Printf("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
-			account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+			account.Iban, holder, account.Balance, account.Currency, account.Bic, account.Suspended)
 	}
 }
 

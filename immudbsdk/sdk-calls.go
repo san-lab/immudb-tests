@@ -2,8 +2,6 @@ package immudbsdk
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -14,42 +12,32 @@ import (
 func VerifiedSet(key, value string) error {
 	// write an entry
 	// upon submission, the SDK validates proofs and updates the local state under the hood
-	hdr, err := StateClient.VerifiedSet(context.Background(), []byte(key), []byte(value))
+	_, err := STATE_CLIENT.VerifiedSet(context.Background(), []byte(key), []byte(value))
 	if err != nil {
 		fmt.Println(err)
-		return err
 	}
-	_ = hdr
-	//fmt.Printf("Sucessfully set a verified entry: ('%s', '%s') @ tx %d\n", []byte(key), []byte(value), hdr.Id)
-	//fmt.Printf("Current state root is 0x%x\n", hdr.GetBlRoot())
-	return nil
+	return err
 }
 
 func VerifiedGet(key string) (*schema.Entry, error) {
 	// read an entry
 	// upon submission, the SDK validates proofs and updates the local state under the hood
-	entry, err := StateClient.VerifiedGet(context.Background(), []byte(key))
-	if err != nil {
-		return nil, err
-	}
-	return entry, nil
+	entry, err := STATE_CLIENT.VerifiedGet(context.Background(), []byte(key))
+	return entry, err
 }
 
 func Health() (*schema.DatabaseHealthResponse, error) {
-	health, err := StateClient.Health(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	return health, nil
+	health, err := STATE_CLIENT.Health(context.Background())
+	return health, err
 }
 
 func CurrentStateRoot() ([]byte, uint64, error) {
-	state, err := StateClient.CurrentState(context.Background())
+	state, err := STATE_CLIENT.CurrentState(context.Background())
 	if err != nil {
 		fmt.Println(err)
 		return nil, 0, err
 	}
-	tx, err := StateClient.TxByID(context.Background(), state.GetTxId())
+	tx, err := STATE_CLIENT.TxByID(context.Background(), state.GetTxId())
 	if err != nil {
 		fmt.Println(err)
 		return nil, 0, err
@@ -60,12 +48,8 @@ func CurrentStateRoot() ([]byte, uint64, error) {
 
 func GetAllEntries() (*schema.Entries, error) {
 	req := &schema.ScanRequest{Limit: 100} // 100 users...
-	entries, err := StateClient.Scan(context.Background(), req)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-	return entries, nil
+	entries, err := STATE_CLIENT.Scan(context.Background(), req)
+	return entries, err
 }
 
 func TxById(idString string) (*schema.Tx, error) {
@@ -74,7 +58,7 @@ func TxById(idString string) (*schema.Tx, error) {
 		fmt.Println(err)
 		return nil, err
 	}
-	tx, err := StateClient.TxByID(context.Background(), uint64(id))
+	tx, err := STATE_CLIENT.TxByID(context.Background(), uint64(id))
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -84,24 +68,21 @@ func TxById(idString string) (*schema.Tx, error) {
 
 // ----- Msgs database methods -----
 
-func StoreInMsgsDB(txmsg *MT103Message) (string, error) {
-	value, err := json.Marshal(txmsg)
+func VerifiedSetMsg(key, value string) error {
+	_, err := MSGS_CLIENT.VerifiedSet(context.Background(), []byte(key), []byte(value))
 	if err != nil {
-		return "", err
+		fmt.Println(err)
 	}
-	hash := sha256.Sum256(value)
-	key := fmt.Sprintf("0x%x", hash[:])
-	_, err = MsgsClient.VerifiedSet(context.Background(), []byte(key), value)
-	return key, err
+	return err
 }
 
 func VerifiedGetMsg(key string) (*schema.Entry, error) {
-	entry, err := MsgsClient.VerifiedGet(context.Background(), []byte(key))
+	entry, err := MSGS_CLIENT.VerifiedGet(context.Background(), []byte(key))
 	return entry, err
 }
 
 func GetAllMsgsEntries() (*schema.Entries, error) {
 	req := &schema.ScanRequest{Limit: 100} // 100 users...
-	entries, err := MsgsClient.Scan(context.Background(), req)
+	entries, err := MSGS_CLIENT.Scan(context.Background(), req)
 	return entries, err
 }
