@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+
+	"github.com/fatih/color"
 )
 
 type Account struct {
@@ -97,7 +99,7 @@ func (account *Account) GetCABank() (string, error) {
 
 func (account *Account) GetDigest() (string, error) {
 	// TODO: add more fields to the digest (making sure both banks have will have the same values!)
-	fields := fmt.Sprintf("%f", account.Balance)
+	fields := fmt.Sprintf("%s%2f", account.Iban, account.Balance)
 	sum := sha256.Sum256([]byte(fields))
 	return fmt.Sprintf("%x", sum), nil
 }
@@ -106,12 +108,29 @@ func (account *Account) GetDigest() (string, error) {
 func (account *Account) PrintAccount(spacing bool) {
 	if spacing {
 		fmt.Println(" -----------------")
-		fmt.Printf("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n| Suspended: %t\n",
-			account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		if account.IsCA {
+			color.Red("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		} else if account.IsMirror {
+			color.Green("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		} else {
+			fmt.Printf("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		}
 		fmt.Println(" -----------------")
 	} else {
-		fmt.Printf("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
-			account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		if account.IsCA {
+			color.Red("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		} else if account.IsMirror {
+			color.Green("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		} else {
+			fmt.Printf("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		}
+
 	}
 }
 

@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	account "github.com/san-lab/immudb-tests/account"
+	"github.com/san-lab/immudb-tests/blockchainconnector"
 	. "github.com/san-lab/immudb-tests/datastructs"
 	sdk "github.com/san-lab/immudb-tests/immudbsdk"
 )
@@ -42,6 +44,9 @@ type MT103Message struct {
 	Amount              string
 }
 
+// CABank -> BlockNumber -> digest
+var DigestHistory = make(map[string]map[int]string)
+
 func IntraBankTx(userFrom, amount, userTo string) error {
 	err := account.WithdrawFromAccount(userFrom, amount)
 	if err != nil {
@@ -70,8 +75,7 @@ func InterBankTx(userFrom, amount, userTo, bankTo string) error { // TODO maybe 
 	}
 
 	// Replicate what the other bank should do with our correspondent account
-	mirrorAccount := THIS_BANK.Name + bankTo + "IBAN"
-	err = account.WithdrawFromAccount(mirrorAccount, amount)
+	err = account.WithdrawFromAccount(account.MirrorAccountIBAN(bankTo), amount)
 	if err != nil {
 		return err
 	}
@@ -97,12 +101,22 @@ func ProcessInterBankTx(txmsg *MT103Message) error {
 	}
 
 	// Move funds from ordering bank correspondent account
-	correspondentAccount := txmsg.OrderingInstitution + "IBAN"
-	err = account.WithdrawFromAccount(correspondentAccount, txmsg.Amount)
+	err = account.WithdrawFromAccount(account.CAAccountIBAN(txmsg.OrderingInstitution), txmsg.Amount)
 	if err != nil {
 		return err
 	}
 
+	// Find out what blockNumber this new state belongs to
+	blockNumber, err := blockchainconnector.GetBlockNumber()
+	if err != nil {
+		return err
+	}
+	digest, err := account.GetAccountDigest(account.CAAccountIBAN(txmsg.OrderingInstitution))
+	if err != nil {
+		return err
+	}
+	DigestHistory[txmsg.OrderingInstitution][blockNumber] = digest
+	fmt.Println("debug map", DigestHistory[txmsg.OrderingInstitution])
 	return err
 }
 
@@ -117,7 +131,7 @@ func validAndAddressedToUs(txmsg *MT103Message) bool {
 		return false
 	}
 	return true
-	// TODO check more stuff..
+	// TODO: check more stuff..
 }
 
 func FindCounterpartBanks() error {
@@ -153,6 +167,19 @@ func ProcessBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 			// fmt.Println(err)
 			return err
 		}
+
+		// Initialize digest history
+		DigestHistory[discoveryMsg.SenderBankName] = make(map[int]string)
+		blockNumber, err := blockchainconnector.GetBlockNumber()
+		if err != nil {
+			return err
+		}
+		digest, err := account.GetAccountDigest(account.CAAccountIBAN(discoveryMsg.SenderBankName))
+		if err != nil {
+			return err
+		}
+		DigestHistory[discoveryMsg.SenderBankName][blockNumber] = digest
+		fmt.Println("debug map", DigestHistory[discoveryMsg.SenderBankName])
 
 	} else {
 		// TODO handle properly
@@ -287,4 +314,18 @@ func PrintAllMessages(mtmsgs []*MT103Message) {
 		PrintMessage(msg, false)
 	}
 	fmt.Println(" -----------------")
+}
+
+func PickLatestDigestPriorToResquestedBlockNumber(cABank string, blockNumber *big.Int) (string, error) {
+	digest := ""
+	number := int(blockNumber.Int64())
+	for digest == "" && number > 0 {
+		number = number - 1
+		digest = DigestHistory[cABank][number]
+	}
+	fmt.Println("debug pick digest:", cABank, number, digest)
+	if digest == "" {
+		return "", errors.New("couldnt find a digest for the block number requested")
+	}
+	return digest, nil
 }

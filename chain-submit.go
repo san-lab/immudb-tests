@@ -6,6 +6,7 @@ import (
 	"time"
 
 	account "github.com/san-lab/immudb-tests/account"
+	"github.com/san-lab/immudb-tests/bankinterop"
 	"github.com/san-lab/immudb-tests/blockchainconnector"
 	. "github.com/san-lab/immudb-tests/datastructs"
 	"github.com/wealdtech/go-merkletree/keccak256"
@@ -23,10 +24,11 @@ func periodicallySubmitHash(done chan bool, ticker *time.Ticker) {
 			fmt.Println("****** Tick at", t)
 			mirrorAccounts, _ := account.GetAllAccounts("mirror")
 			for _, mirrorAccount := range mirrorAccounts {
-				recipientBank := COUNTERPART_BANKS[mirrorAccount.CABank]
+				recipientBankAddress := COUNTERPART_BANKS[mirrorAccount.CABank]
 				digest, _ := mirrorAccount.GetDigest()
-
-				if ONLY_ON_CHANGES && digest != previousDigest[recipientBank] {
+				// TODO: initialize previousDigest quering blockchain StateCheck
+				fmt.Println("* debug previous digest", digest, previousDigest[mirrorAccount.CABank])
+				if ONLY_ON_CHANGES && digest != previousDigest[mirrorAccount.CABank] {
 					digestBytes, err := hex.DecodeString(digest)
 					if err != nil {
 						fmt.Println(err)
@@ -34,15 +36,15 @@ func periodicallySubmitHash(done chan bool, ticker *time.Ticker) {
 					}
 					hashBytes := keccak256.New().Hash(digestBytes)
 					hash := fmt.Sprintf("%x", hashBytes)
-					fmt.Println("* Submitting hash for", mirrorAccount.Iban)
+					fmt.Println("* Submitting hash for", mirrorAccount.Holder)
 					fmt.Println("* Digest", digest)
 					fmt.Println("* Hash", hash)
-					err = blockchainconnector.SubmitHash(recipientBank, hash)
+					err = blockchainconnector.SubmitHash(recipientBankAddress, hash)
 					if err != nil {
 						fmt.Println(err)
 						continue
 					}
-					previousDigest[recipientBank] = digest
+					previousDigest[mirrorAccount.CABank] = digest
 				}
 				fmt.Println("* done!")
 			}
@@ -61,9 +63,10 @@ func periodicallyPollAndSubmitPreImage(done chan bool, ticker *time.Ticker) {
 			fmt.Println("------ Tick at", t)
 			CAAccounts, _ := account.GetAllAccounts("ca")
 			for _, CAAccount := range CAAccounts {
-				fmt.Println("- Checking CA ", CAAccount.Iban)
-				originatorBank := COUNTERPART_BANKS[CAAccount.CABank]
-				pending, err := blockchainconnector.GetPendingSubmissions(originatorBank)
+				fmt.Println("-- Checking CA ", CAAccount.Holder)
+				originatorBankAddress := COUNTERPART_BANKS[CAAccount.CABank]
+				//TODO: right now they need to discover each other, could instead save address.....
+				pending, err := blockchainconnector.GetPendingSubmissions(originatorBankAddress)
 				if err != nil {
 					fmt.Println(err)
 					continue
@@ -73,10 +76,15 @@ func periodicallyPollAndSubmitPreImage(done chan bool, ticker *time.Ticker) {
 					continue
 				}
 				fmt.Println("- Pending submissions:", pending)
-				digest, _ := CAAccount.GetDigest()
-				fmt.Println("- Submitting preimage for", CAAccount.Iban)
+				fmt.Println("- debug map", bankinterop.DigestHistory[CAAccount.CABank])
+				digest, err := bankinterop.PickLatestDigestPriorToResquestedBlockNumber(CAAccount.CABank, pending[len(pending)-1]) //CAAccount.GetDigest()
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				fmt.Println("- Submitting preimage for", CAAccount.Holder)
 				fmt.Println("- Digest", digest)
-				err = blockchainconnector.SubmitPreimage(originatorBank, digest, pending[len(pending)-1])
+				err = blockchainconnector.SubmitPreimage(originatorBankAddress, digest, pending[len(pending)-1])
 				if err != nil {
 					fmt.Println(err)
 					continue

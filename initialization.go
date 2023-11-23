@@ -8,6 +8,7 @@ import (
 
 	"github.com/codenotary/immudb/pkg/api/schema"
 	"github.com/codenotary/immudb/pkg/client"
+	account "github.com/san-lab/immudb-tests/account"
 	"github.com/san-lab/immudb-tests/bankinterop"
 	"github.com/san-lab/immudb-tests/blockchainconnector"
 	. "github.com/san-lab/immudb-tests/datastructs"
@@ -69,4 +70,22 @@ func initConfigParams() {
 
 	DB_IP = viper.GetString("DB_IP")
 	DB_PORT = viper.GetInt("DB_PORT")
+}
+
+// Initialize digest history
+func initDigestHistory() {
+	CAAccounts, _ := account.GetAllAccounts("ca")
+	for _, CAAccount := range CAAccounts {
+		bankinterop.DigestHistory[CAAccount.CABank] = make(map[int]string)
+		blockNumber, err := blockchainconnector.GetBlockNumber()
+		if err != nil {
+			fmt.Println(err)
+		}
+		digest, err := account.GetAccountDigest(CAAccount.Iban)
+		if err != nil {
+			fmt.Println(err)
+		}
+		bankinterop.DigestHistory[CAAccount.CABank][blockNumber] = digest
+		fmt.Println("debug initial map", CAAccount.CABank, bankinterop.DigestHistory[CAAccount.CABank])
+	}
 }

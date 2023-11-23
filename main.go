@@ -24,6 +24,9 @@ func main() {
 	// Initialize DBs
 	initDB(DB_IP, DB_PORT)
 
+	// Initialize digest history of onboarded CA banks
+	initDigestHistory()
+
 	// Ensure connection is closed
 	defer STATE_CLIENT.CloseSession(context.Background())
 	defer MSGS_CLIENT.CloseSession(context.Background())

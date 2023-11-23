@@ -161,18 +161,18 @@ func SubmitPreimage(originatorBank string, preimage string, blockNumber *big.Int
 	return err
 }
 
-func GetBlockNumber() (*big.Int, error) {
+func GetBlockNumber() (int, error) {
 	client, err := ethclient.Dial(NETWORK)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	header, err := client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return header.Number, nil
+	return int(header.Number.Int64()), nil
 }
 
 func Version() (string, error) {

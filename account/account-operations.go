@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	. "github.com/san-lab/immudb-tests/datastructs"
 	sdk "github.com/san-lab/immudb-tests/immudbsdk"
@@ -12,6 +13,30 @@ import (
 
 const CA = "ca"
 const MIRROR = "mirror"
+
+// CA
+// IBAN: OtherBank@MyBankIBAN
+// Holder: OtherBank - CA
+
+// Mirror
+// IBAN: MyBank@OtherBankIBAN
+// Holder: MyBank @ OtherBank - Mirror
+
+func CAAccountIBAN(cABank string) string {
+	return strings.ReplaceAll(cABank+"@"+THIS_BANK.Name+"IBAN", " ", "")
+}
+
+func CAAccountHolder(cABank string) string {
+	return cABank + " - CA"
+}
+
+func MirrorAccountIBAN(cABank string) string {
+	return strings.ReplaceAll(THIS_BANK.Name+"@"+cABank+"IBAN", " ", "")
+}
+
+func MirrorAccountHolder(cABank string) string {
+	return THIS_BANK.Name + " @ " + cABank + " - Mirror"
+}
 
 func CreateAccount(bic, iban, holder, currency, cABank string, balance float32, isCA, isMirror bool) error {
 	// Check if IBAN already in database
@@ -26,20 +51,16 @@ func CreateAccount(bic, iban, holder, currency, cABank string, balance float32, 
 	return err
 }
 
-// IBAN: OtherBank - CA IBAN
-// Holder: OtherBank - CA
 func CreateCAAccount(bic, currency, cABank string, balance float32) error {
-	holder := cABank + " - CA"
-	iban := holder + " IBAN"
+	iban := CAAccountIBAN(cABank)
+	holder := CAAccountHolder(cABank)
 	err := CreateAccount(bic, iban, holder, currency, cABank, balance, true, false)
 	return err
 }
 
-// IBAN: MyBank @ OtherBank - Mirror IBAN
-// Holder: MyBank @ OtherBank - Mirror
 func CreateMirrorAccount(bic, currency, cABank string, balance float32) error {
-	holder := THIS_BANK.Name + " @ " + cABank + " - Mirror"
-	iban := holder + " IBAN"
+	iban := MirrorAccountIBAN(cABank)
+	holder := MirrorAccountHolder(cABank)
 	err := CreateAccount(bic, iban, holder, currency, cABank, balance, false, true)
 	return err
 }
