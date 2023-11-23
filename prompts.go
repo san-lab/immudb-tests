@@ -313,7 +313,7 @@ func ManageAccountUI(userIban string) {
 				fmt.Println(err)
 				continue
 			}
-			fmt.Println("Account digest: 0x", accountDigest)
+			fmt.Printf("Account digest: 0x%s\n", accountDigest)
 
 		case UP:
 			return

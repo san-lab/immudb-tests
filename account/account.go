@@ -4,8 +4,6 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-
-	. "github.com/san-lab/immudb-tests/datastructs"
 )
 
 type Account struct {
@@ -100,28 +98,20 @@ func (account *Account) GetCABank() (string, error) {
 func (account *Account) GetDigest() (string, error) {
 	// TODO: add more fields to the digest (making sure both banks have will have the same values!)
 	fields := fmt.Sprintf("%f", account.Balance)
-	fmt.Println("debug fields:", fields)
-
 	sum := sha256.Sum256([]byte(fields))
 	return fmt.Sprintf("%x", sum), nil
 }
 
 // Print account details
 func (account *Account) PrintAccount(spacing bool) {
-	holder := account.Holder
-	if account.IsCA {
-		holder = account.CABank + " - CA"
-	} else if account.IsMirror {
-		holder = THIS_BANK.Name + "@" + account.CABank + " - Mirror"
-	}
 	if spacing {
 		fmt.Println(" -----------------")
 		fmt.Printf("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n| Suspended: %t\n",
-			account.Iban, holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+			account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
 		fmt.Println(" -----------------")
 	} else {
 		fmt.Printf("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
-			account.Iban, holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+			account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
 	}
 }
 

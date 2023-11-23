@@ -18,6 +18,8 @@ const BANK_DISCOVERY_MESSAGE = "BankDiscoveryMessage"
 const QUESTION = "question"
 const ANSWER = "answer"
 
+const INITIAL_AMOUNT = float32(100.0)
+
 type BankDiscoveryMessage struct {
 	Type              string // to prevent infinite loop
 	SenderBankName    string
@@ -132,13 +134,11 @@ func ProcessBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 	// Pick the other bank name
 	_, set := COUNTERPART_BANKS[discoveryMsg.SenderBankName]
 	if !set {
-		initialAmount := float32(100.0)
-
 		// Register he discovered bank
 		COUNTERPART_BANKS[discoveryMsg.SenderBankName] = discoveryMsg.SenderBankAddress
 
 		// Onboard the discovered bank
-		err := account.CreateAccount("", discoveryMsg.SenderBankName+"IBAN", discoveryMsg.SenderBankName, "", discoveryMsg.SenderBankName, initialAmount, true, false)
+		err := account.CreateCAAccount("", "", discoveryMsg.SenderBankName, INITIAL_AMOUNT)
 		if err != nil {
 			// It means the bank has been onboarded in the DB already
 			// fmt.Println(err)
@@ -146,7 +146,8 @@ func ProcessBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 		}
 
 		// Assume the other bank has done the same, and create a mirror of our account
-		err = account.CreateAccount("", THIS_BANK.Name+discoveryMsg.SenderBankName+"IBAN", discoveryMsg.SenderBankName, "", discoveryMsg.SenderBankName, initialAmount, false, true)
+
+		err = account.CreateMirrorAccount("", "", discoveryMsg.SenderBankName, INITIAL_AMOUNT)
 		if err != nil {
 			// It means the bank has been onboarded in the DB already
 			// fmt.Println(err)

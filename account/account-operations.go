@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	. "github.com/san-lab/immudb-tests/datastructs"
 	sdk "github.com/san-lab/immudb-tests/immudbsdk"
 )
 
@@ -22,6 +23,24 @@ func CreateAccount(bic, iban, holder, currency, cABank string, balance float32, 
 	accountState := SetAccount(bic, iban, holder, currency, cABank, balance, isCA, isMirror)
 
 	err = SerializeAndSetAccount(iban, accountState)
+	return err
+}
+
+// IBAN: OtherBank - CA IBAN
+// Holder: OtherBank - CA
+func CreateCAAccount(bic, currency, cABank string, balance float32) error {
+	holder := cABank + " - CA"
+	iban := holder + " IBAN"
+	err := CreateAccount(bic, iban, holder, currency, cABank, balance, true, false)
+	return err
+}
+
+// IBAN: MyBank @ OtherBank - Mirror IBAN
+// Holder: MyBank @ OtherBank - Mirror
+func CreateMirrorAccount(bic, currency, cABank string, balance float32) error {
+	holder := THIS_BANK.Name + " @ " + cABank + " - Mirror"
+	iban := holder + " IBAN"
+	err := CreateAccount(bic, iban, holder, currency, cABank, balance, false, true)
 	return err
 }
 
