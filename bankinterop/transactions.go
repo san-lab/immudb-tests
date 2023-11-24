@@ -323,7 +323,7 @@ func PickLatestDigestPriorToResquestedBlockNumber(cABank string, blockNumber *bi
 		number = number - 1
 		digest = DigestHistory[cABank][number]
 	}
-	fmt.Println("debug pick digest:", cABank, number, digest)
+	fmt.Println("- debug pick digest:", cABank, number, digest)
 	if digest == "" {
 		return "", errors.New("couldnt find a digest for the block number requested")
 	}

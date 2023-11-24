@@ -13,10 +13,6 @@ const MSGS_DB = "msgdb"
 var DB_IP string
 var DB_PORT int
 
-const UPDATE_FREQUENCY = 60
-const POLL_FREQUENCY = 35
-const ONLY_ON_CHANGES = true
-
 func main() {
 	// Parse all config parameters
 	initConfigParams()
@@ -47,3 +43,6 @@ func main() {
 	// ticker.Stop()
 	// done <- true
 }
+
+// TODO allow for scripts via api
+// TODO include blocknumber in message (maybe within a mutex between hash submisison and hash retrieval)

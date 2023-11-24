@@ -15,6 +15,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var FIRST_BLOCK_NUMBER int
+
 func initDB(ip string, port int) {
 	// even though the server address and port are defaults, setting them as a reference
 	opts := client.DefaultOptions().WithAddress(ip).WithPort(port)
@@ -87,5 +89,6 @@ func initDigestHistory() {
 		}
 		bankinterop.DigestHistory[CAAccount.CABank][blockNumber] = digest
 		fmt.Println("debug initial map", CAAccount.CABank, bankinterop.DigestHistory[CAAccount.CABank])
+		FIRST_BLOCK_NUMBER = blockNumber
 	}
 }
