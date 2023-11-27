@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
+	"github.com/fatih/color"
 	account "github.com/san-lab/immudb-tests/account"
 	"github.com/san-lab/immudb-tests/blockchainconnector"
 	. "github.com/san-lab/immudb-tests/datastructs"
@@ -21,6 +23,7 @@ const QUESTION = "question"
 const ANSWER = "answer"
 
 const INITIAL_AMOUNT = float32(100.0)
+const DEBT_LIMIT = -100.0
 
 type BankDiscoveryMessage struct {
 	Type              string // to prevent infinite loop
@@ -61,6 +64,16 @@ func InterBankTx(userFrom, amount, userTo, bankTo string) error {
 	_, set := COUNTERPART_BANKS[bankTo]
 	if !set {
 		return errors.New("cannot perform the inter bank transaction. could not find recipient bank")
+	}
+
+	// Check balance at mirror, and take action
+	mirrorAccount, _ := account.GetAccount(account.MirrorAccountIBAN(bankTo))
+	amountFloat, _ := strconv.ParseFloat(amount, 32)
+	mirrorBalance := mirrorAccount.Balance - float32(amountFloat)
+	if mirrorBalance < DEBT_LIMIT {
+		return errors.New("cannot perform the inter bank transaction. our correspondent account at counterpart bank would be over the limit")
+	} else if mirrorBalance < 0 {
+		color.Red("Warning: balance of our mirror account @ %s is %.2f", bankTo, mirrorBalance)
 	}
 
 	err := account.WithdrawFromAccount(userFrom, amount)

@@ -1,29 +1,3 @@
-# Account structure
-```
-Suspended bool
-Bic       string
-Iban      string
-Balance   float32
-Holder    string
-Currency  string
-```
-
-# Message format
-Similar to Swift MT103:
-```
-TxReferenceNumber      string
-TimeIndication         string
-BankOperationCode      string
-ValueDate              string
-Currency               string
-ExchangeRate           string
-OrderingInstitution    string
-OrderingCustomer       string
-BeneficiaryInstitution string
-BeneficiaryCustomer    string
-Amount                 string
-```
-
 # Setup
 
 0. Setup ImmuDB https://docs.immudb.io/0.9.2/quickstart.html
@@ -43,4 +17,131 @@ For some reason, the web server still points to the first instance...
 ```
 ./binary_name
 ./binary_name --config config/config2.env
+```
+
+Config files must have the following data:
+```
+BANK_NAME
+BANK_ADDRESS
+
+DB_IP
+DB_PORT
+
+LIBP2P_TOPIC 
+API_PORT
+
+NETWORK
+CHAIN_ID
+VERIFIER_ADDRESS
+PRIV_KEY_FILE
+```
+
+Sample:
+```
+BANK_NAME="Santa Bank"
+BANK_ADDRESS="0x7eC027cF7f470983030167d2FACE94745E1AFfE3"
+
+DB_IP="127.0.0.1"
+DB_PORT=3322
+
+LIBP2P_TOPIC = "ImmuDBTopic"
+API_PORT = 3301
+
+NETWORK="http://localhost:7545"
+CHAIN_ID="5777"
+VERIFIER_ADDRESS="0xff330b4c20d04602f2e522354a1e1d2c91835a7f"
+PRIV_KEY_FILE="config/priv_key.txt"
+```
+
+5. Deploy ```blockchainconnector/onchainverfier.go``` on your blockchain network of choice
+
+# APIs
+
+####GET /
+Will answer with the bank name and address
+
+####GET /api/health
+Will answer ```Up!``` if the server is running
+
+
+####POST /api/transactions
+Provide an array of structs with the following data. *BankTo* field determines whether is an intrabank or interbank transaction:
+```
+type TransactionsStruct []struct 
+{
+	UserFrom string `json:"userfrom"`
+	Amount   string `json:"amount"`
+	UserTo   string `json:"userto"`
+	BankTo   string `json:"bankto"`
+}
+```
+
+Sample: 
+```
+[
+{
+    "userfrom": "UserFromIBAN",
+    "amount":   "10",
+    "userto":   "UserToIBAN",
+    "bankto":   "MyOwnBank"
+},
+{
+    "userfrom": "UserFromIBAN",
+    "amount":   "2",
+    "userto":   "UserToIBAN",
+    "bankto":   "CounterpartBank"
+},
+...
+]
+```
+
+####POST /api/account-creation
+Provide an array of structs with the following data. Correspondent account fields (*isCA*, *isMirror*, *CABank*) will be ignored for now.
+```
+type Account struct 
+{
+	Suspended bool    `json:"suspended"`
+	Bic       string  `json:"bic"`
+	Iban      string  `json:"iban"`
+	Balance   float32 `json:"balance"`
+	Holder    string  `json:"holder"`
+	Currency  string  `json:"currency"`
+	IsCA      bool    `json:"isca"`
+	IsMirror  bool    `json:"ismirror"`
+	CABank    string  `json:"cabank"`
+}
+```
+
+Sample:
+```
+[
+{
+	"suspended": false,
+	"bic":       "",
+	"iban":      "NewUserIBAN",
+	"balance":   15.5,
+	"holder":    "NewUserName",
+	"currency":  "",
+	"isca":      "false",
+	"ismirror":  "false",
+	"cabank":    ""
+},
+...
+]
+```
+
+# Message format
+Similar to Swift MT103:
+```
+TxReferenceNumber      string
+TimeIndication         string
+BankOperationCode      string
+ValueDate              string
+Currency               string
+ExchangeRate           string
+OrderingInstitution    string
+OrderingCustomer       string
+BeneficiaryInstitution string
+BeneficiaryCustomer    string
+Amount                 string
 ```
