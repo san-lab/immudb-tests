@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"time"
 
 	. "github.com/san-lab/immudb-tests/datastructs"
 )
@@ -28,13 +27,18 @@ func main() {
 	defer MSGS_CLIENT.CloseSession(context.Background())
 
 	// Go routines that interact with blockchain
-	ticker := time.NewTicker(UPDATE_FREQUENCY * time.Second)
-	done := make(chan bool)
-	go periodicallySubmitHash(done, ticker)
+	/*
+		ticker := time.NewTicker(UPDATE_FREQUENCY * time.Second)
+		done := make(chan bool)
+		go periodicallySubmitHash(done, ticker)
 
-	ticker2 := time.NewTicker(POLL_FREQUENCY * time.Second)
-	done2 := make(chan bool)
-	go periodicallyPollAndSubmitPreImage(done2, ticker2)
+		ticker2 := time.NewTicker(POLL_FREQUENCY * time.Second)
+		done2 := make(chan bool)
+		go periodicallyPollAndSubmitPreImage(done2, ticker2)
+	*/
+
+	// HTTP server
+	go startApiServer()
 
 	// PromptUI to select action
 	TopUI()
@@ -44,5 +48,4 @@ func main() {
 	// done <- true
 }
 
-// TODO allow for scripts via api
 // TODO include blocknumber in message (maybe within a mutex between hash submisison and hash retrieval)

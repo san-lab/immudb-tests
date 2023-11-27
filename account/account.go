@@ -9,21 +9,21 @@ import (
 )
 
 type Account struct {
-	Suspended bool
-	Bic       string
-	Iban      string
-	Balance   float32
-	Holder    string
-	Currency  string
-	IsCA      bool
-	IsMirror  bool
-	CABank    string
+	Suspended bool    `json:"suspended"`
+	Bic       string  `json:"bic"`
+	Iban      string  `json:"iban"`
+	Balance   float32 `json:"balance"`
+	Holder    string  `json:"holder"`
+	Currency  string  `json:"currency"`
+	IsCA      bool    `json:"isca"`
+	IsMirror  bool    `json:"ismirror"`
+	CABank    string  `json:"cabank"`
 }
 
 // Opens a new bank account with the specified parameters
-func SetAccount(bic, iban, holder, currency, cABank string, balance float32, isCA, isMirror bool) *Account {
+func SetAccount(bic, iban, holder, currency, cABank string, balance float32, suspended, isCA, isMirror bool) *Account {
 	return &Account{
-		Suspended: false,
+		Suspended: suspended,
 		Bic:       bic,
 		Iban:      iban,
 		Balance:   balance,
@@ -108,27 +108,33 @@ func (account *Account) GetDigest() (string, error) {
 func (account *Account) PrintAccount(spacing bool) {
 	if spacing {
 		fmt.Println(" -----------------")
-		if account.IsCA {
-			color.Red("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
-				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		if account.Suspended {
+			color.Magenta("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
+		} else if account.IsCA {
+			color.Red("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		} else if account.IsMirror {
-			color.Green("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
-				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+			color.Green("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		} else {
-			fmt.Printf("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
-				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+			fmt.Printf("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		}
 		fmt.Println(" -----------------")
 	} else {
-		if account.IsCA {
-			color.Red("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
-				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+		if account.Suspended {
+			color.Magenta("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
+		} else if account.IsCA {
+			color.Red("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		} else if account.IsMirror {
-			color.Green("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
-				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+			color.Green("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		} else {
-			fmt.Printf("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s | Suspended: %t\n",
-				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic, account.Suspended)
+			fmt.Printf("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",
+				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		}
 
 	}

@@ -70,6 +70,8 @@ func initConfigParams() {
 	bankinterop.NET = viper.GetString("LIBP2P_TOPIC")
 	bankinterop.LIBP2P_NODE, _ = bankinterop.GetNode()
 
+	API_PORT = viper.GetInt("API_PORT")
+
 	DB_IP = viper.GetString("DB_IP")
 	DB_PORT = viper.GetInt("DB_PORT")
 }

@@ -166,7 +166,7 @@ func TopUI() {
 			pr = promptui.Prompt{Label: "Introduce the owner name of the new account", Default: "test_ownerName"}
 			userName, _ := pr.Run()
 
-			err := account.CreateAccount("", userIban, userName, "", "", 0, false, false)
+			err := account.CreateAccount("", userIban, userName, "", "", 0, false, false, false)
 			if err != nil {
 				fmt.Println(err)
 				continue

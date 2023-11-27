@@ -38,14 +38,14 @@ func MirrorAccountHolder(cABank string) string {
 	return THIS_BANK.Name + " @ " + cABank + " - Mirror"
 }
 
-func CreateAccount(bic, iban, holder, currency, cABank string, balance float32, isCA, isMirror bool) error {
+func CreateAccount(bic, iban, holder, currency, cABank string, balance float32, suspended, isCA, isMirror bool) error {
 	// Check if IBAN already in database
 	_, err := GetAndDeserializeAccount(iban)
 	if err == nil {
 		return errors.New("account with that IBAN is already in the database")
 	}
 
-	accountState := SetAccount(bic, iban, holder, currency, cABank, balance, isCA, isMirror)
+	accountState := SetAccount(bic, iban, holder, currency, cABank, balance, suspended, isCA, isMirror)
 
 	err = SerializeAndSetAccount(iban, accountState)
 	return err
@@ -54,14 +54,14 @@ func CreateAccount(bic, iban, holder, currency, cABank string, balance float32, 
 func CreateCAAccount(bic, currency, cABank string, balance float32) error {
 	iban := CAAccountIBAN(cABank)
 	holder := CAAccountHolder(cABank)
-	err := CreateAccount(bic, iban, holder, currency, cABank, balance, true, false)
+	err := CreateAccount(bic, iban, holder, currency, cABank, balance, false, true, false)
 	return err
 }
 
 func CreateMirrorAccount(bic, currency, cABank string, balance float32) error {
 	iban := MirrorAccountIBAN(cABank)
 	holder := MirrorAccountHolder(cABank)
-	err := CreateAccount(bic, iban, holder, currency, cABank, balance, false, true)
+	err := CreateAccount(bic, iban, holder, currency, cABank, balance, false, false, true)
 	return err
 }
 

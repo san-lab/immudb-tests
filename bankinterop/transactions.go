@@ -57,7 +57,12 @@ func IntraBankTx(userFrom, amount, userTo string) error {
 	return err
 }
 
-func InterBankTx(userFrom, amount, userTo, bankTo string) error { // TODO maybe another struct for the parameters
+func InterBankTx(userFrom, amount, userTo, bankTo string) error {
+	_, set := COUNTERPART_BANKS[bankTo]
+	if !set {
+		return errors.New("cannot perform the inter bank transaction. could not find recipient bank")
+	}
+
 	err := account.WithdrawFromAccount(userFrom, amount)
 	if err != nil {
 		return err
