@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/fatih/color"
+	"github.com/san-lab/immudb-tests/color"
 )
 
 type Account struct {
@@ -109,13 +109,13 @@ func (account *Account) PrintAccount(spacing bool) {
 	if spacing {
 		fmt.Println(" -----------------")
 		if account.Suspended {
-			color.Magenta("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
+			color.CPrintf(color.MAGENTA, "| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
 				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		} else if account.IsCA {
-			color.Red("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
+			color.CPrintf(color.RED, "| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
 				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		} else if account.IsMirror {
-			color.Green("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
+			color.CPrintf(color.GREEN, "| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
 				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		} else {
 			fmt.Printf("| IBAN: %s\n| Holder: %s\n| Balance: %.2f\n| Currency: %s\n| BIC: %s\n",
@@ -124,13 +124,13 @@ func (account *Account) PrintAccount(spacing bool) {
 		fmt.Println(" -----------------")
 	} else {
 		if account.Suspended {
-			color.Magenta("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",
+			color.CPrintf(color.MAGENTA, "| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",
 				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		} else if account.IsCA {
-			color.Red("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",
+			color.CPrintf(color.RED, "| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",
 				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		} else if account.IsMirror {
-			color.Green("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",
+			color.CPrintf(color.GREEN, "| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",
 				account.Iban, account.Holder, account.Balance, account.Currency, account.Bic)
 		} else {
 			fmt.Printf("| IBAN: %s | Holder: %s | Balance: %.2f | Currency: %s | BIC: %s\n",

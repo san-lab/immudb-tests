@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fatih/color"
-	account "github.com/san-lab/immudb-tests/account"
+	"github.com/san-lab/immudb-tests/account"
 	"github.com/san-lab/immudb-tests/bankinterop"
 	"github.com/san-lab/immudb-tests/blockchainconnector"
+	"github.com/san-lab/immudb-tests/color"
 	. "github.com/san-lab/immudb-tests/datastructs"
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
@@ -26,14 +26,13 @@ func periodicallySubmitHash(done chan bool, ticker *time.Ticker) {
 			return
 
 		case t := <-ticker.C:
-			color.Cyan("\n****** Tick at %s", t)
-			//fmt.Println(promptui.Styler(promptui.FGCyan)(fmt.Sprintf("****** Tick at %s", t)))
+			color.CPrintln(color.CYAN, "\n****** Tick at %s", t)
 			mirrorAccounts, _ := account.GetAllAccounts(account.MIRROR)
 			for _, mirrorAccount := range mirrorAccounts {
 				recipientBankAddress := COUNTERPART_BANKS[mirrorAccount.CABank]
 				digest, _ := mirrorAccount.GetDigest()
 				// TODO: initialize previousDigest quering blockchain StateCheck
-				color.Cyan("* debug previous digest %s =? %s", digest, previousDigest[mirrorAccount.CABank])
+				color.CPrintln(color.CYAN, "* Previous digest compare %s =? %s", color.Shorten(digest, 10), color.Shorten(previousDigest[mirrorAccount.CABank], 10))
 				if ONLY_ON_CHANGES && digest != previousDigest[mirrorAccount.CABank] {
 					digestBytes, err := hex.DecodeString(digest)
 					if err != nil {
@@ -42,10 +41,10 @@ func periodicallySubmitHash(done chan bool, ticker *time.Ticker) {
 					}
 					hashBytes := keccak256.New().Hash(digestBytes)
 					hash := fmt.Sprintf("%x", hashBytes)
-					color.Cyan("*** Submitting hash for %s", mirrorAccount.Holder)
-					color.Cyan("* Digest %s", digest)
-					color.Cyan("* Hash %s", hash)
-					color.Cyan("* RecipientBankAddress %s", recipientBankAddress)
+					color.CPrintln(color.CYAN, "*** Submitting hash for %s", mirrorAccount.Holder)
+					color.CPrintln(color.CYAN, "* Digest %s", color.Shorten(digest, 10))
+					color.CPrintln(color.CYAN, "* Hash %s", color.Shorten(hash, 10))
+					color.CPrintln(color.CYAN, "* RecipientBankAddress %s", recipientBankAddress)
 					err = blockchainconnector.SubmitHash(recipientBankAddress, hash)
 					if err != nil {
 						fmt.Println(err)
@@ -53,7 +52,7 @@ func periodicallySubmitHash(done chan bool, ticker *time.Ticker) {
 					}
 					previousDigest[mirrorAccount.CABank] = digest
 				}
-				color.Cyan("** done!")
+				color.CPrintln(color.CYAN, "** Done!")
 			}
 		}
 	}
@@ -67,10 +66,10 @@ func periodicallyPollAndSubmitPreImage(done chan bool, ticker *time.Ticker) {
 			return
 
 		case t := <-ticker.C:
-			color.White("\n------ Tick at %s", t)
+			color.CPrintln(color.WHITE, "\n------ Tick at %s", t)
 			CAAccounts, _ := account.GetAllAccounts(account.CA)
 			for _, CAAccount := range CAAccounts {
-				color.White("--- Checking CA %s", CAAccount.Holder)
+				color.CPrintln(color.WHITE, "--- Checking CA %s", CAAccount.Holder)
 				originatorBankAddress := COUNTERPART_BANKS[CAAccount.CABank]
 				//TODO: right now they need to discover each other, could instead save address.....
 				pending, err := blockchainconnector.GetPendingSubmissions(originatorBankAddress)
@@ -78,27 +77,33 @@ func periodicallyPollAndSubmitPreImage(done chan bool, ticker *time.Ticker) {
 					fmt.Println(err)
 					continue
 				}
-				color.White("- Pending submissions: %v", pending)
+				color.CPrintln(color.WHITE, "- Pending submissions: %v", pending)
 				// Either no pending, or pending older that what we can provide
 				if len(pending) == 0 || int(pending[len(pending)-1].Int64()) < FIRST_BLOCK_NUMBER {
-					color.White("- No pending submissions for this CA")
+					color.CPrintln(color.WHITE, "- No pending submissions for this CA")
 					continue
 				}
-				color.White("- debug %v", bankinterop.DigestHistory[CAAccount.CABank])
+
+				//color.CPrintln(color.WHITE, "- Full digest history %v", bankinterop.DigestHistory[CAAccount.CABank])
+				color.CPrintln(color.WHITE, "-- Full digest history:")
+				for k, v := range bankinterop.DigestHistory[CAAccount.CABank] {
+					color.CPrintln(color.WHITE, "- %d -> %s", k, color.Shorten(v, 10))
+				}
+
 				digest, err := bankinterop.PickLatestDigestPriorToResquestedBlockNumber(CAAccount.CABank, pending[len(pending)-1]) //CAAccount.GetDigest()
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
-				color.White("- Submitting preimage for %s", CAAccount.Holder)
-				color.White("- Digest %s", digest)
-				color.White("- originatorBankAddress %s", originatorBankAddress)
+				color.CPrintln(color.WHITE, "- Submitting preimage for %s", CAAccount.Holder)
+				color.CPrintln(color.WHITE, "- Digest %s", color.Shorten(digest, 10))
+				color.CPrintln(color.WHITE, "- OriginatorBankAddress %s", originatorBankAddress)
 				err = blockchainconnector.SubmitPreimage(originatorBankAddress, digest, pending[len(pending)-1])
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
-				color.White("-- done!")
+				color.CPrintln(color.WHITE, "-- Done!")
 			}
 		}
 	}

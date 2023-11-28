@@ -1,7 +1,6 @@
 package bankinterop
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,14 +8,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/fatih/color"
-	account "github.com/san-lab/immudb-tests/account"
+	"github.com/san-lab/immudb-tests/account"
 	"github.com/san-lab/immudb-tests/blockchainconnector"
+	"github.com/san-lab/immudb-tests/color"
 	. "github.com/san-lab/immudb-tests/datastructs"
-	sdk "github.com/san-lab/immudb-tests/immudbsdk"
 )
 
 const MT103_MESSAGE = "MT103"
+const REFILL_CA_MESSAGE = "RefillCAMessage"
 const BANK_DISCOVERY_MESSAGE = "BankDiscoveryMessage"
 
 const QUESTION = "question"
@@ -47,6 +46,19 @@ type MT103Message struct {
 	Amount              string
 }
 
+// Refill CA account
+type RefillCAMessage struct {
+	TxReferenceNumber string
+	TimeIndication    string
+	ValueDate         string // always today?
+	Currency          string
+	ExchangeRate      string
+
+	OrderingInstitution    string
+	BeneficiaryInstitution string
+	Amount                 string
+}
+
 // CABank -> BlockNumber -> digest
 var DigestHistory = make(map[string]map[int]string)
 
@@ -73,7 +85,7 @@ func InterBankTx(userFrom, amount, userTo, bankTo string) error {
 	if mirrorBalance < DEBT_LIMIT {
 		return errors.New("cannot perform the inter bank transaction. our correspondent account at counterpart bank would be over the limit")
 	} else if mirrorBalance < 0 {
-		color.Red("Warning: balance of our mirror account @ %s is %.2f", bankTo, mirrorBalance)
+		color.CPrintln(color.RED, "Warning: balance of our mirror account @ %s is %.2f", bankTo, mirrorBalance)
 	}
 
 	err := account.WithdrawFromAccount(userFrom, amount)
@@ -82,7 +94,13 @@ func InterBankTx(userFrom, amount, userTo, bankTo string) error {
 	}
 
 	// Send event to the topic and store it in MsgsDB
-	txmsg := &MT103Message{TimeIndication: time.Now().String(), OrderingInstitution: THIS_BANK.Name, OrderingCustomer: userFrom, BeneficiaryInstitution: bankTo, BeneficiaryCustomer: userTo, Amount: amount}
+	txmsg := &MT103Message{
+		TimeIndication:         time.Now().String(),
+		OrderingInstitution:    THIS_BANK.Name,
+		OrderingCustomer:       userFrom,
+		BeneficiaryInstitution: bankTo,
+		BeneficiaryCustomer:    userTo,
+		Amount:                 amount}
 	bytes, err := json.Marshal(txmsg)
 	if err != nil {
 		return err
@@ -105,7 +123,7 @@ func InterBankTx(userFrom, amount, userTo, bankTo string) error {
 
 // When receiveing a transaction
 func ProcessInterBankTx(txmsg *MT103Message) error {
-	if !validAndAddressedToUs(txmsg) {
+	if !validAndAddressedToUsMT103(txmsg) {
 		return errors.New("received transaction message is invalid")
 	}
 	hash, err := StoreInMsgsDB(txmsg)
@@ -124,32 +142,42 @@ func ProcessInterBankTx(txmsg *MT103Message) error {
 		return err
 	}
 
-	// Find out what blockNumber this new state belongs to
-	blockNumber, err := blockchainconnector.GetBlockNumber()
-	if err != nil {
-		return err
-	}
-	digest, err := account.GetAccountDigest(account.CAAccountIBAN(txmsg.OrderingInstitution))
-	if err != nil {
-		return err
-	}
-	DigestHistory[txmsg.OrderingInstitution][blockNumber] = digest
-	fmt.Println("debug map", DigestHistory[txmsg.OrderingInstitution])
+	err = updateCADigestHistory(txmsg.OrderingInstitution)
 	return err
 }
 
-func validAndAddressedToUs(txmsg *MT103Message) bool {
-	if txmsg.BeneficiaryInstitution != THIS_BANK.Name {
-		return false
+func RefillCA(amount, bankTo string) error {
+	// TODO: dont update until confirmation
+	err := account.DepositToAccount(account.MirrorAccountIBAN(bankTo), amount)
+	if err != nil {
+		return err
+	}
+	txmsg := &RefillCAMessage{
+		TimeIndication:         time.Now().String(),
+		OrderingInstitution:    THIS_BANK.Name,
+		BeneficiaryInstitution: bankTo,
+		Amount:                 amount}
+
+	bytes, err := json.Marshal(txmsg)
+	if err != nil {
+		return err
+	}
+	LIBP2P_NODE.SendMessage(REFILL_CA_MESSAGE, bytes)
+	return nil
+}
+
+func ProcessRefillCA(refillMsg *RefillCAMessage) error {
+	if !validAndAddressedToUsRefillCA(refillMsg) {
+		return errors.New("received refill message is invalid")
 	}
 
-	_, err := sdk.VerifiedGet(txmsg.BeneficiaryCustomer)
+	err := account.DepositToAccount(account.CAAccountIBAN(refillMsg.OrderingInstitution), refillMsg.Amount)
 	if err != nil {
-		fmt.Println("Beneficiary customer is not in the database")
-		return false
+		return err
 	}
-	return true
-	// TODO: check more stuff..
+
+	err = updateCADigestHistory(refillMsg.OrderingInstitution)
+	return err
 }
 
 func FindCounterpartBanks() error {
@@ -227,6 +255,15 @@ func HandleMessage(msgtype string, data []byte) {
 		}
 		ProcessInterBankTx(txMsg)
 
+	case REFILL_CA_MESSAGE:
+		txMsg := new(RefillCAMessage)
+		err := json.Unmarshal(data, txMsg)
+		if err != nil {
+			fmt.Println("bad frame:", err)
+			return
+		}
+		ProcessRefillCA(txMsg)
+
 	case BANK_DISCOVERY_MESSAGE:
 		discoveryMsg := new(BankDiscoveryMessage)
 		err := json.Unmarshal(data, discoveryMsg)
@@ -241,99 +278,6 @@ func HandleMessage(msgtype string, data []byte) {
 	}
 }
 
-func GetMessage(key string) (*MT103Message, error) {
-	// Pick message
-	messageRaw, err := sdk.VerifiedGetMsg(key)
-	if err != nil {
-		return nil, err
-	}
-	message := new(MT103Message)
-	err = json.Unmarshal(messageRaw.Value, message)
-	return message, err
-}
-
-func GetAllMessages() ([]*MT103Message, error) {
-	entries, err := sdk.GetAllMsgsEntries()
-	if err != nil {
-		return nil, err
-	}
-	messages := []*MT103Message{}
-	for _, entry := range entries.Entries {
-		message := new(MT103Message)
-		err := json.Unmarshal(entry.Value, message)
-		if err != nil {
-			return messages, err
-		}
-		messages = append(messages, message)
-	}
-	return messages, nil
-}
-
-func StoreInMsgsDB(txmsg *MT103Message) (string, error) {
-	value, err := json.Marshal(txmsg)
-	if err != nil {
-		return "", err
-	}
-	hash := sha256.Sum256(value)
-	key := fmt.Sprintf("0x%x", hash[:])
-	err = sdk.VerifiedSetMsg(key, string(value))
-	return key, err
-}
-
-func PrintBankInfo() {
-	fmt.Println("| Bank Name:", THIS_BANK.Name)
-	fmt.Println("| Bank Address:", THIS_BANK.Address)
-	fmt.Println("| ImmuDB instance running on IP:", STATE_CLIENT.GetOptions().Address)
-	fmt.Println("| ImmuDB instance running on port:", STATE_CLIENT.GetOptions().Port)
-	fmt.Println("| ...")
-}
-
-func PrintMessage(mtmsg *MT103Message, spacing bool) {
-	incOutGoing := "Outgoing message"
-	if mtmsg.BeneficiaryInstitution == THIS_BANK.Name {
-		incOutGoing = "Incoming message"
-	}
-	if spacing {
-		fmt.Println(" -----------------")
-		fmt.Printf("| %s\n| TxReferenceNumber: %s\n| TimeIndication: %s\n| BankOperationCode: %s\n| ValueDate: %s\n| Currency: %s\n| ExchangeRate: %s\n| OrderingInstitution: %s\n| BeneficiaryInstitution: %s\n| OrderingCustomer: %s\n| BeneficiaryCustomer: %s\n| Amount: %s\n",
-			incOutGoing,
-			mtmsg.TxReferenceNumber,
-			mtmsg.TimeIndication,
-			mtmsg.BankOperationCode,
-			mtmsg.ValueDate,
-			mtmsg.Currency,
-			mtmsg.ExchangeRate,
-			mtmsg.OrderingInstitution,
-			mtmsg.BeneficiaryInstitution,
-			mtmsg.OrderingCustomer,
-			mtmsg.BeneficiaryCustomer,
-			mtmsg.Amount)
-		fmt.Println(" -----------------")
-	} else {
-		fmt.Printf("| %s | TxReferenceNumber: %s | TimeIndication: %s | BankOperationCode: %s | ValueDate: %s | Currency: %s | ExchangeRate: %s | OrderingInstitution: %s | BeneficiaryInstitution: %s | OrderingCustomer: %s | BeneficiaryCustomer: %s | Amount: %s\n",
-			incOutGoing,
-			mtmsg.TxReferenceNumber,
-			mtmsg.TimeIndication,
-			mtmsg.BankOperationCode,
-			mtmsg.ValueDate,
-			mtmsg.Currency,
-			mtmsg.ExchangeRate,
-			mtmsg.OrderingInstitution,
-			mtmsg.BeneficiaryInstitution,
-			mtmsg.OrderingCustomer,
-			mtmsg.BeneficiaryCustomer,
-			mtmsg.Amount)
-	}
-}
-
-func PrintAllMessages(mtmsgs []*MT103Message) {
-	fmt.Println(" -----------------")
-	for _, msg := range mtmsgs {
-		PrintMessage(msg, false)
-	}
-	fmt.Println(" -----------------")
-}
-
 func PickLatestDigestPriorToResquestedBlockNumber(cABank string, blockNumber *big.Int) (string, error) {
 	digest := ""
 	number := int(blockNumber.Int64())
@@ -341,7 +285,7 @@ func PickLatestDigestPriorToResquestedBlockNumber(cABank string, blockNumber *bi
 		number = number - 1
 		digest = DigestHistory[cABank][number]
 	}
-	fmt.Println("- debug pick digest:", cABank, number, digest)
+	color.CPrintln(color.WHITE, "- Picked digest: %s, %d, %s", cABank, number, color.Shorten(digest, 10))
 	if digest == "" {
 		return "", errors.New("couldnt find a digest for the block number requested")
 	}

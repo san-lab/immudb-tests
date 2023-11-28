@@ -40,10 +40,10 @@ func initDB(ip string, port int) {
 	c2.CreateDatabaseV2(context.Background(), MSGS_DB, &schema.DatabaseNullableSettings{})
 
 	_, err = c.UseDatabase(context.Background(), &schema.Database{DatabaseName: STATE_DB})
-	fmt.Println("Connection check State client", err, c.GetOptions().CurrentDatabase)
+	fmt.Println("+ Connection check State client:", err, c.GetOptions().CurrentDatabase)
 
 	_, err = c2.UseDatabase(context.Background(), &schema.Database{DatabaseName: MSGS_DB})
-	fmt.Println("Connection check Msgs client", err, c2.GetOptions().CurrentDatabase)
+	fmt.Println("+ Connection check Msgs client:", err, c2.GetOptions().CurrentDatabase)
 
 	STATE_CLIENT = c
 	MSGS_CLIENT = c2
@@ -90,7 +90,15 @@ func initDigestHistory() {
 			fmt.Println(err)
 		}
 		bankinterop.DigestHistory[CAAccount.CABank][blockNumber] = digest
-		fmt.Println("debug initial map", CAAccount.CABank, bankinterop.DigestHistory[CAAccount.CABank])
+		fmt.Println("+ Initial digest history:", CAAccount.CABank, bankinterop.DigestHistory[CAAccount.CABank])
 		FIRST_BLOCK_NUMBER = blockNumber
 	}
+}
+
+func PrintBankInfo() {
+	fmt.Println("| Bank Name:", THIS_BANK.Name)
+	fmt.Println("| Bank Address:", THIS_BANK.Address)
+	fmt.Println("| ImmuDB instance running on IP:", STATE_CLIENT.GetOptions().Address)
+	fmt.Println("| ImmuDB instance running on port:", STATE_CLIENT.GetOptions().Port)
+	fmt.Println("| ...")
 }

@@ -54,7 +54,7 @@ PRIV_KEY_FILE="config/priv_key.txt"
 ```
 Private key must be hex encoded, **without** *"0x"* character **nor** quotation marks.
 
-5. Deploy ```blockchainconnector/onchainverfier.go``` on your blockchain network of choice
+5. Deploy ```blockchainconnector/onchainverfier.go``` on your blockchain network of choice (compiler version 0.5.0)
 
 
 # APIs
@@ -129,6 +129,29 @@ Sample:
 	"cabank":    ""
 },
 ...
+]
+```
+
+### POST /api/refill-ca
+Refill correspondent account at another bank. Provide an array of structs with the following data.
+```
+type RefillCAStruct struct {
+	Amount string `json:"amount"`
+	CABank string `json:"cabank"`
+}
+```
+
+Sample:
+```
+[
+{
+    "amount": "10",
+    "cabank": "Test Bank"
+},
+{
+    "amount": "1",
+    "cabank": "Test Bank 2"
+}
 ]
 ```
 
