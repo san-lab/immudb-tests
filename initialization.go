@@ -60,7 +60,6 @@ func initConfigParams() {
 	THIS_BANK.Name = viper.GetString("BANK_NAME")
 	THIS_BANK.Address = viper.GetString("BANK_ADDRESS")
 	COUNTERPART_BANKS[THIS_BANK.Name] = THIS_BANK.Address
-	COUNTERPART_BANKS["SampleBank"] = "0x1234"
 
 	blockchainconnector.NETWORK = viper.GetString("NETWORK")
 	blockchainconnector.CHAIN_ID = viper.GetString("CHAIN_ID")
@@ -98,7 +97,8 @@ func initDigestHistory() {
 func PrintBankInfo() {
 	fmt.Println("| Bank Name:", THIS_BANK.Name)
 	fmt.Println("| Bank Address:", THIS_BANK.Address)
-	fmt.Println("| ImmuDB instance running on IP:", STATE_CLIENT.GetOptions().Address)
-	fmt.Println("| ImmuDB instance running on port:", STATE_CLIENT.GetOptions().Port)
-	fmt.Println("| ...")
+	fmt.Printf("| ImmuDB instance running on %s:%d\n", STATE_CLIENT.GetOptions().Address, STATE_CLIENT.GetOptions().Port)
+	fmt.Println("| API server running on port:", API_PORT)
+	fmt.Printf("| Connected to blockchain network %s, with chain ID: %s\n", blockchainconnector.NETWORK, blockchainconnector.CHAIN_ID)
+	fmt.Println("| Verifier contract address:", blockchainconnector.VERIFIER_ADDRESS)
 }

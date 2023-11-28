@@ -31,6 +31,7 @@ const HEALTH_ENDPOINT = "/api/health"
 const TRANSACTIONS_ENDPOINT = "/api/transactions"
 const REFILL_CA_ENDPOINT = "/api/refill-ca"
 const ACCOUNT_CREATION_ENDPOINT = "/api/account-creation"
+const MIRROR_BALANCE_ENDPOINT = "/api/mirror-balance"
 
 func startApiServer() {
 	// HTTP routes
@@ -39,6 +40,7 @@ func startApiServer() {
 	http.HandleFunc(TRANSACTIONS_ENDPOINT, transactionsHandler)
 	http.HandleFunc(REFILL_CA_ENDPOINT, refillCAHandler)
 	http.HandleFunc(ACCOUNT_CREATION_ENDPOINT, accountCreationHandler)
+	http.HandleFunc(MIRROR_BALANCE_ENDPOINT, mirrorBalanceHandler)
 
 	fmt.Println("+ API Server running on port", API_PORT)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", API_PORT), nil)
@@ -52,7 +54,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Up!")
+	fmt.Fprint(w, "Health check: Up!")
 }
 
 func transactionsHandler(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +138,23 @@ func accountCreationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	fmt.Fprintf(w, "Done!")
+}
+
+func mirrorBalanceHandler(w http.ResponseWriter, r *http.Request) {
+	cABank := r.URL.Query()["cabank"]
+	fmt.Println(cABank)
+	//fmt.Fprintf(w, "Received POST request. Processing...\n")
+	fmt.Println(cABank[0])
+	fmt.Println(account.MirrorAccountIBAN(cABank[0]))
+	mirrorAccount, err := account.GetAccount(account.MirrorAccountIBAN(cABank[0]))
+	fmt.Println(mirrorAccount)
+	fmt.Println(mirrorAccount.Balance)
+	if err != nil {
+		fmt.Fprintf(w, "Error %s\n", err.Error())
+	} else {
+		fmt.Fprintf(w, "%.2f", mirrorAccount.Balance)
+	}
+
 }
 
 func checkForPostRequest(w http.ResponseWriter, r *http.Request) ([]byte, error) {

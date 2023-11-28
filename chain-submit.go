@@ -29,6 +29,7 @@ func periodicallySubmitHash(done chan bool, ticker *time.Ticker) {
 			color.CPrintln(color.CYAN, "\n****** Tick at %s", t)
 			mirrorAccounts, _ := account.GetAllAccounts(account.MIRROR)
 			for _, mirrorAccount := range mirrorAccounts {
+				color.CPrintln(color.CYAN, "*** Checking Mirror Account %s", mirrorAccount.Holder)
 				recipientBankAddress := COUNTERPART_BANKS[mirrorAccount.CABank]
 				digest, _ := mirrorAccount.GetDigest()
 				// TODO: initialize previousDigest quering blockchain StateCheck

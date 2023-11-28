@@ -47,7 +47,7 @@ const txById = "Get transaction by ID"
 const seeMessagesDB = "See messages database...WIP"
 const seeMessageByHash = "See a message by its hash...WIP"
 
-const onChainOps = "On chain operations"
+const onChainOps = "On-chain operations"
 const getStateCheckByBlockNumber = "getStateCheckByBlockNumber"
 const getStateCheckByIndex = "getStateCheckByIndex"
 const getPendingSubmissions = "getPendingSubmissions"
@@ -113,7 +113,7 @@ func TopUI() {
 			}
 
 		case refillCA:
-			amount, _ := promptForString("Introduce the amount", "33")
+			amount, _ := promptForString("Introduce the amount to deposit", "100")
 			bankTo, _ := promptForBankName(false, "Select the bank recipient of the transaction")
 
 			if bankTo != UP {
