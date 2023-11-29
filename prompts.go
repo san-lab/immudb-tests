@@ -94,7 +94,7 @@ func TopUI() {
 			bankTo, _ := promptForBankName(false, "Select the bank of the recipient of the transaction")
 
 			if bankTo != UP {
-				err := bankinterop.InterBankTx(userFrom, amount, userTo, bankTo)
+				err := bankinterop.RequestInterBankTx(userFrom, amount, userTo, bankTo)
 				if err != nil {
 					fmt.Println(err)
 					continue
@@ -117,7 +117,7 @@ func TopUI() {
 			bankTo, _ := promptForBankName(false, "Select the bank recipient of the transaction")
 
 			if bankTo != UP {
-				err := bankinterop.RefillCA(amount, bankTo)
+				err := bankinterop.RequestRefillCA(amount, bankTo)
 				if err != nil {
 					fmt.Println(err)
 					continue

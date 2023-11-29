@@ -49,4 +49,4 @@ func main() {
 }
 
 // TODO include blocknumber in message (maybe within a mutex between hash submisison and hash retrieval)
-// TODO script coordinator
+// TODO refill wait confirmation form other bank (same with interbank tx)

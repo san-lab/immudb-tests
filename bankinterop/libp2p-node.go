@@ -8,6 +8,7 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/peer"
+	. "github.com/san-lab/immudb-tests/datastructs"
 )
 
 var NET string
@@ -27,6 +28,7 @@ type Node struct {
 
 type GenericMessage struct {
 	MessageType string
+	Recipient   string
 	Data        []byte
 }
 
@@ -53,11 +55,15 @@ func (node *Node) ProcessMessage(msg *pubsub.Message) {
 		fmt.Println("bad frame:", err)
 		return
 	}
+	if genmsg.Recipient != "" && genmsg.Recipient != THIS_BANK.Name {
+		// Not addressed to us
+		return
+	}
 	HandleMessage(genmsg.MessageType, genmsg.Data)
 }
 
-func (node *Node) SendMessage(dataType string, data []byte) {
-	genmsg := GenericMessage{MessageType: dataType, Data: data}
+func (node *Node) SendMessage(dataType, recipient string, data []byte) {
+	genmsg := GenericMessage{MessageType: dataType, Recipient: recipient, Data: data}
 	b, _ := json.Marshal(genmsg)
 	node.topic.Publish(context.Background(), b)
 }

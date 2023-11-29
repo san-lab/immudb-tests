@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/san-lab/immudb-tests/account"
 	"github.com/san-lab/immudb-tests/blockchainconnector"
@@ -12,30 +13,80 @@ import (
 	sdk "github.com/san-lab/immudb-tests/immudbsdk"
 )
 
-func validAndAddressedToUsMT103(txmsg *MT103Message) bool {
+func validInterBankTx(txmsg *MT103Message) bool {
 	if txmsg.BeneficiaryInstitution != THIS_BANK.Name {
 		return false
 	}
 
 	_, err := sdk.VerifiedGet(txmsg.BeneficiaryCustomer)
 	if err != nil {
-		color.CPrintln(color.RED, "Beneficiary customer is not in the database")
+		color.CPrintln(color.RED, "%s is not in the database", txmsg.BeneficiaryCustomer)
+		return false
+	}
+
+	_, err = sdk.VerifiedGet(account.CAAccountIBAN(txmsg.OrderingInstitution))
+	if err != nil {
+		color.CPrintln(color.RED, "%s ordering bank correspondent account is not in the database", account.CAAccountIBAN(txmsg.OrderingInstitution))
 		return false
 	}
 	return true
-	// TODO: check more stuff..
 }
 
-func validAndAddressedToUsRefillCA(refillMsg *RefillCAMessage) bool {
+func validInterBankTxConfirmation(txmsg *MT103Message) bool {
+	if txmsg.OrderingInstitution != THIS_BANK.Name {
+		return false
+	}
+
+	_, err := sdk.VerifiedGet(txmsg.OrderingCustomer)
+	if err != nil {
+		color.CPrintln(color.RED, "%s is not in the database", txmsg.OrderingCustomer)
+		return false
+	}
+
+	_, err = sdk.VerifiedGet(account.MirrorAccountIBAN(txmsg.BeneficiaryInstitution))
+	if err != nil {
+		color.CPrintln(color.RED, "%s mirror account of recipient bank CA is not in the database", account.MirrorAccountIBAN(txmsg.BeneficiaryInstitution))
+		return false
+	}
+
+	return true
+}
+
+func isMirrorBalanceEnough(bankTo, amount string) bool {
+	mirrorAccount, _ := account.GetAccount(account.MirrorAccountIBAN(bankTo))
+	amountFloat, _ := strconv.ParseFloat(amount, 32)
+	finalMirrorBalance := mirrorAccount.Balance - float32(amountFloat)
+	if finalMirrorBalance < DEBT_LIMIT {
+		color.CPrintln(color.RED, "Error: cannot perform the inter bank transaction. our correspondent account at counterpart bank would be over the limit")
+		return false
+	} else if finalMirrorBalance < 0 {
+		color.CPrintln(color.RED, "Warning: balance of our mirror account @ %s is %.2f", bankTo, finalMirrorBalance)
+	}
+	return true
+}
+
+func validRefillCA(refillMsg *RefillCAMessage) bool {
 	if refillMsg.BeneficiaryInstitution != THIS_BANK.Name {
 		return false
 	}
+
 	_, err := sdk.VerifiedGet(account.CAAccountIBAN(refillMsg.OrderingInstitution))
 	if err != nil {
-		color.CPrintln(color.RED, "%s corresnpondent account is not in the database", refillMsg.OrderingInstitution)
+		color.CPrintln(color.RED, "%s correspondent account is not in the database", refillMsg.OrderingInstitution)
 		return false
 	}
-	// TODO: check more stuff..
+	return true
+}
+
+func validRefillCAConfirmation(refillMsg *RefillCAMessage) bool {
+	if refillMsg.OrderingInstitution != THIS_BANK.Name {
+		return false
+	}
+	_, err := sdk.VerifiedGet(account.MirrorAccountIBAN(refillMsg.BeneficiaryInstitution))
+	if err != nil {
+		color.CPrintln(color.RED, "%s mirror account is not in the database", refillMsg.BeneficiaryInstitution)
+		return false
+	}
 	return true
 }
 

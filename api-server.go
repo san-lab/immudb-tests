@@ -76,7 +76,7 @@ func transactionsHandler(w http.ResponseWriter, r *http.Request) {
 			err = bankinterop.IntraBankTx(tx.UserFrom, tx.Amount, tx.UserTo)
 			// Interbank tx
 		} else {
-			err = bankinterop.InterBankTx(tx.UserFrom, tx.Amount, tx.UserTo, tx.BankTo)
+			err = bankinterop.RequestInterBankTx(tx.UserFrom, tx.Amount, tx.UserTo, tx.BankTo)
 		}
 		if err != nil {
 			fmt.Fprintf(w, " - Error: %s\n", err.Error())
@@ -103,7 +103,7 @@ func refillCAHandler(w http.ResponseWriter, r *http.Request) {
 	for i, tx := range refillCAs {
 		fmt.Fprintf(w, "refill tx %d: %s", i, tx)
 
-		err = bankinterop.RefillCA(tx.Amount, tx.CABank)
+		err = bankinterop.RequestRefillCA(tx.Amount, tx.CABank)
 		if err != nil {
 			fmt.Fprintf(w, " - Error: %s\n", err.Error())
 		} else {
@@ -142,13 +142,7 @@ func accountCreationHandler(w http.ResponseWriter, r *http.Request) {
 
 func mirrorBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	cABank := r.URL.Query()["cabank"]
-	fmt.Println(cABank)
-	//fmt.Fprintf(w, "Received POST request. Processing...\n")
-	fmt.Println(cABank[0])
-	fmt.Println(account.MirrorAccountIBAN(cABank[0]))
 	mirrorAccount, err := account.GetAccount(account.MirrorAccountIBAN(cABank[0]))
-	fmt.Println(mirrorAccount)
-	fmt.Println(mirrorAccount.Balance)
 	if err != nil {
 		fmt.Fprintf(w, "Error %s\n", err.Error())
 	} else {

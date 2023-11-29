@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/san-lab/immudb-tests/account"
@@ -15,7 +14,9 @@ import (
 )
 
 const MT103_MESSAGE = "MT103"
+const MT103_CONFIRMATION = "MT103Confirmation"
 const REFILL_CA_MESSAGE = "RefillCAMessage"
+const REFILL_CA_CONFIRMATION = "RefillCAConfirmation"
 const BANK_DISCOVERY_MESSAGE = "BankDiscoveryMessage"
 
 const QUESTION = "question"
@@ -72,25 +73,16 @@ func IntraBankTx(userFrom, amount, userTo string) error {
 	return err
 }
 
-func InterBankTx(userFrom, amount, userTo, bankTo string) error {
+// TODO: keep track of pending Interbank and Refill pending responses with a reference number in the message. Dont act on anything that is not pending
+func RequestInterBankTx(userFrom, amount, userTo, bankTo string) error {
 	_, set := COUNTERPART_BANKS[bankTo]
 	if !set {
 		return errors.New("cannot perform the inter bank transaction. could not find recipient bank")
 	}
 
 	// Check balance at mirror, and take action
-	mirrorAccount, _ := account.GetAccount(account.MirrorAccountIBAN(bankTo))
-	amountFloat, _ := strconv.ParseFloat(amount, 32)
-	mirrorBalance := mirrorAccount.Balance - float32(amountFloat)
-	if mirrorBalance < DEBT_LIMIT {
-		return errors.New("cannot perform the inter bank transaction. our correspondent account at counterpart bank would be over the limit")
-	} else if mirrorBalance < 0 {
-		color.CPrintln(color.RED, "Warning: balance of our mirror account @ %s is %.2f", bankTo, mirrorBalance)
-	}
-
-	err := account.WithdrawFromAccount(userFrom, amount)
-	if err != nil {
-		return err
+	if !isMirrorBalanceEnough(bankTo, amount) {
+		return errors.New("not enough balance at correspondent account")
 	}
 
 	// Send event to the topic and store it in MsgsDB
@@ -105,32 +97,41 @@ func InterBankTx(userFrom, amount, userTo, bankTo string) error {
 	if err != nil {
 		return err
 	}
-	hash, err := StoreInMsgsDB(txmsg)
-	if err != nil {
-		return err
-	}
+	LIBP2P_NODE.SendMessage(MT103_MESSAGE, bankTo, bytes)
+	fmt.Println("debug tx sent", txmsg)
+	/*
+		hash, err := StoreInMsgsDB(txmsg)
+		if err != nil {
+			return err
+		}
+		fmt.Println("Hash of the message sent:", hash)
 
-	// Replicate what the other bank should do with our correspondent account
-	err = account.WithdrawFromAccount(account.MirrorAccountIBAN(bankTo), amount)
-	if err != nil {
-		return err
-	}
+		err = account.WithdrawFromAccount(userFrom, amount)
+		if err != nil {
+			return err
+		}
 
-	fmt.Println("Hash of the message sent:", hash)
-	LIBP2P_NODE.SendMessage(MT103_MESSAGE, bytes)
+		// Replicate what the other bank should do with our correspondent account
+		err = account.WithdrawFromAccount(account.MirrorAccountIBAN(bankTo), amount)
+		if err != nil {
+			return err
+		}
+	*/
 	return nil
 }
 
 // When receiveing a transaction
 func ProcessInterBankTx(txmsg *MT103Message) error {
-	if !validAndAddressedToUsMT103(txmsg) {
-		return errors.New("received transaction message is invalid")
+	if !validInterBankTx(txmsg) {
+		return errors.New("received transaction message is invalid or not addressed to us")
 	}
+
 	hash, err := StoreInMsgsDB(txmsg)
 	if err != nil {
 		return err
 	}
-	fmt.Println("Hash of the message received:", hash)
+	fmt.Println("Hash of the transaction received:", hash)
+
 	err = account.DepositToAccount(txmsg.BeneficiaryCustomer, txmsg.Amount)
 	if err != nil {
 		return err
@@ -142,10 +143,43 @@ func ProcessInterBankTx(txmsg *MT103Message) error {
 		return err
 	}
 
+	bytes, err := json.Marshal(txmsg)
+	if err != nil {
+		return err
+	}
+	LIBP2P_NODE.SendMessage(MT103_CONFIRMATION, txmsg.OrderingInstitution, bytes)
+	fmt.Println("debug tx received", txmsg)
+
 	err = updateCADigestHistory(txmsg.OrderingInstitution)
 	return err
 }
 
+func ConfirmedInterBankTx(txmsg *MT103Message) error {
+	if !validInterBankTxConfirmation(txmsg) {
+		return errors.New("received transaction message is invalid or not addressed to us")
+	}
+	fmt.Println("debug tx confirmation", txmsg)
+
+	hash, err := StoreInMsgsDB(txmsg)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Hash of the transaction sent (confirmed):", hash)
+
+	err = account.WithdrawFromAccount(txmsg.OrderingCustomer, txmsg.Amount)
+	if err != nil {
+		return err
+	}
+
+	// Replicate what the other bank should do with our correspondent account
+	err = account.WithdrawFromAccount(account.MirrorAccountIBAN(txmsg.BeneficiaryInstitution), txmsg.Amount)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+/*
 func RefillCA(amount, bankTo string) error {
 	// TODO: dont update until confirmation
 	err := account.DepositToAccount(account.MirrorAccountIBAN(bankTo), amount)
@@ -179,6 +213,56 @@ func ProcessRefillCA(refillMsg *RefillCAMessage) error {
 	err = updateCADigestHistory(refillMsg.OrderingInstitution)
 	return err
 }
+*/
+
+func RequestRefillCA(amount, bankTo string) error {
+	txmsg := &RefillCAMessage{
+		TimeIndication:         time.Now().String(),
+		OrderingInstitution:    THIS_BANK.Name,
+		BeneficiaryInstitution: bankTo,
+		Amount:                 amount}
+
+	bytes, err := json.Marshal(txmsg)
+	if err != nil {
+		return err
+	}
+	LIBP2P_NODE.SendMessage(REFILL_CA_MESSAGE, bankTo, bytes)
+	fmt.Printf("Sent refill CA request to %s (%s)\n", bankTo, amount)
+	fmt.Println("debug refill sent", txmsg)
+	return nil
+}
+
+func ProcessRefillCA(refillMsg *RefillCAMessage) error {
+	if !validRefillCA(refillMsg) {
+		return errors.New("received refill message is invalid or not addressed to us")
+	}
+
+	err := account.DepositToAccount(account.CAAccountIBAN(refillMsg.OrderingInstitution), refillMsg.Amount)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Received and processed refill CA request from %s (%s)\n", refillMsg.OrderingInstitution, refillMsg.Amount)
+
+	bytes, err := json.Marshal(refillMsg)
+	if err != nil {
+		return err
+	}
+	LIBP2P_NODE.SendMessage(REFILL_CA_CONFIRMATION, refillMsg.OrderingInstitution, bytes)
+	fmt.Println("debug refill received", refillMsg)
+
+	err = updateCADigestHistory(refillMsg.OrderingInstitution)
+	return err
+}
+
+func ConfirmedRefillCA(refillMsg *RefillCAMessage) error {
+	if !validRefillCAConfirmation(refillMsg) {
+		return errors.New("received refill confirmation message is invalid or not addressed to us")
+	}
+	fmt.Println("debug refill confirmation", refillMsg)
+	err := account.DepositToAccount(account.MirrorAccountIBAN(refillMsg.BeneficiaryInstitution), refillMsg.Amount)
+	return err
+}
 
 func FindCounterpartBanks() error {
 	discoveryMsg := &BankDiscoveryMessage{Type: QUESTION, SenderBankName: THIS_BANK.Name, SenderBankAddress: THIS_BANK.Address}
@@ -186,7 +270,7 @@ func FindCounterpartBanks() error {
 	if err != nil {
 		return err
 	}
-	LIBP2P_NODE.SendMessage(BANK_DISCOVERY_MESSAGE, bytes)
+	LIBP2P_NODE.SendMessage(BANK_DISCOVERY_MESSAGE, "", bytes)
 	return nil
 }
 
@@ -225,7 +309,6 @@ func ProcessBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 			return err
 		}
 		DigestHistory[discoveryMsg.SenderBankName][blockNumber] = digest
-		fmt.Println("debug map", DigestHistory[discoveryMsg.SenderBankName])
 
 	} else {
 		// TODO handle properly
@@ -238,7 +321,7 @@ func ProcessBankDiscovery(discoveryMsg *BankDiscoveryMessage) error {
 		if err != nil {
 			return err
 		}
-		LIBP2P_NODE.SendMessage(BANK_DISCOVERY_MESSAGE, bytes)
+		LIBP2P_NODE.SendMessage(BANK_DISCOVERY_MESSAGE, "", bytes)
 	}
 	return nil
 }
@@ -255,6 +338,15 @@ func HandleMessage(msgtype string, data []byte) {
 		}
 		ProcessInterBankTx(txMsg)
 
+	case MT103_CONFIRMATION:
+		txMsg := new(MT103Message)
+		err := json.Unmarshal(data, txMsg)
+		if err != nil {
+			fmt.Println("bad frame:", err)
+			return
+		}
+		ConfirmedInterBankTx(txMsg)
+
 	case REFILL_CA_MESSAGE:
 		txMsg := new(RefillCAMessage)
 		err := json.Unmarshal(data, txMsg)
@@ -263,6 +355,15 @@ func HandleMessage(msgtype string, data []byte) {
 			return
 		}
 		ProcessRefillCA(txMsg)
+
+	case REFILL_CA_CONFIRMATION:
+		txMsg := new(RefillCAMessage)
+		err := json.Unmarshal(data, txMsg)
+		if err != nil {
+			fmt.Println("bad frame:", err)
+			return
+		}
+		ConfirmedRefillCA(txMsg)
 
 	case BANK_DISCOVERY_MESSAGE:
 		discoveryMsg := new(BankDiscoveryMessage)
