@@ -23,6 +23,9 @@ func main() {
 	// Initialize digest history of onboarded CA banks
 	initDigestHistory()
 
+	// Get initial nonce
+	initNonce()
+
 	// Ensure connection is closed
 	defer STATE_CLIENT.CloseSession(context.Background())
 	defer MSGS_CLIENT.CloseSession(context.Background())
@@ -49,4 +52,5 @@ func main() {
 }
 
 // TODO include blocknumber in message (maybe within a mutex between hash submisison and hash retrieval)
-// TODO refill wait confirmation form other bank (same with interbank tx)
+
+// TODO add previous submission blocknumber to keep submitting blocks (privacy purposes)

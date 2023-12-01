@@ -2,11 +2,11 @@ package blockchainconnector
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,6 +15,10 @@ import (
 
 	. "github.com/san-lab/immudb-tests/datastructs"
 )
+
+var mu sync.Mutex
+var TIMEOUT = 30
+var NONCE int
 
 var NETWORK string
 var CHAIN_ID string
@@ -102,6 +106,8 @@ func GetPendingSubmissions(originatorBank string) ([]*big.Int, error) {
 }
 
 func SubmitHash(recipientBank string, hash string) error {
+	//mu.Lock()
+	//fmt.Println("debug hash lock")
 	client, err := ethclient.Dial(NETWORK)
 	if err != nil {
 		return err
@@ -128,10 +134,39 @@ func SubmitHash(recipientBank string, hash string) error {
 		return err
 	}
 	_, err = instance.SubmitHash(auth, originatorBankAddress, recipientBankAddress, [32]byte(hashBytes))
+	fmt.Println("debug submit hash error?", err)
+	if err != nil { // TODO: check for the appropriate error
+		handleNonceError()
+	}
+	// Poll for receipt (when nonce is updated) until TIMEOUT
+	/*
+		stay := true
+		timeout := time.After(time.Duration(TIMEOUT) * time.Second)
+		var receipt *types.Receipt
+		for stay {
+			receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
+			fmt.Println("debug hash receipt", err, receipt)
+			if receipt != nil && err == nil {
+				fmt.Println("debug preimage receipt found it", err, receipt)
+				// Found it
+				break
+			}
+			select {
+			case <-timeout:
+				fmt.Println("debug hash receipt timed out")
+				stay = false
+			default:
+			}
+		}
+	*/
+	// fmt.Println("debug hash unlock")
+	// mu.Unlock()
 	return err
 }
 
 func SubmitPreimage(originatorBank string, preimage string, blockNumber *big.Int) error {
+	// mu.Lock()
+	// fmt.Println("debug preimage lock")
 	client, err := ethclient.Dial(NETWORK)
 	if err != nil {
 		return err
@@ -158,7 +193,43 @@ func SubmitPreimage(originatorBank string, preimage string, blockNumber *big.Int
 		return err
 	}
 	_, err = instance.SubmitPreimage(auth, originatorBankAddress, recipientBankAddress, [32]byte(preimageBytes), blockNumber)
+	fmt.Println("debug submit preimage error?", err)
+	if err != nil { // TODO: check for the appropriate error
+		handleNonceError()
+	}
+	// Poll for receipt (when nonce is updated) until TIMEOUT
+	/*
+		stay := true
+		timeout := time.After(time.Duration(TIMEOUT) * time.Second)
+		var receipt *types.Receipt
+		for stay {
+			receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
+			fmt.Println("debug preimage receipt", err, receipt)
+			if receipt != nil && err == nil {
+				fmt.Println("debug preimage receipt found it", err)
+				// Found it
+				break
+			}
+			select {
+			case <-timeout:
+				fmt.Println("debug preimage receipt timed out")
+				stay = false
+			default:
+			}
+		}
+	*/
+	// fmt.Println("debug preimage unlock")
+	// mu.Unlock()
 	return err
+}
+
+func handleNonceError() {
+	// TODO: Handle nonce recovery properly
+	nonce, err := GetBlockchainNonce()
+	if err != nil {
+		fmt.Println(err)
+	}
+	NONCE = int(nonce)
 }
 
 func GetBlockNumber() (int, error) {
@@ -191,6 +262,33 @@ func Version() (string, error) {
 	return version, err
 }
 
+// Optimistic approach
+func GetLocalNonce() int {
+	fmt.Println("debug waiting lock...")
+	mu.Lock()
+
+	defer fmt.Println("debug unlocked.")
+	defer mu.Unlock()
+
+	currentNonce := NONCE
+	NONCE = NONCE + 1
+	fmt.Println("debug nonce", currentNonce)
+	return currentNonce
+}
+
+// For the nonce to advance we should wait for the tx receipt,
+// in which case we are no better than network latency
+// If we dont wait, we may get desynced
+
+func GetBlockchainNonce() (int, error) {
+	client, err := ethclient.Dial(NETWORK)
+	if err != nil {
+		return 0, err
+	}
+	nonce, err := client.PendingNonceAt(context.Background(), common.HexToAddress(THIS_BANK.Address))
+	return int(nonce), err
+}
+
 func getAuth(client *ethclient.Client) (*bind.TransactOpts, error) {
 	// Read key from file
 	privKeyBytes, err := os.ReadFile(PRIV_KEY_FILE)
@@ -198,26 +296,22 @@ func getAuth(client *ethclient.Client) (*bind.TransactOpts, error) {
 		return nil, err
 	}
 
+	privateKey, err := crypto.HexToECDSA(string(privKeyBytes))
+	if err != nil {
+		return nil, err
+	}
+
 	/*
-		privKey := new(datastructs.PrivateKey)
-		err = json.Unmarshal(privKeyBytes, privKey)
+		publicKey := privateKey.Public()
+		publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
+		fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+		nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
 		if err != nil {
 			return nil, err
 		}
 	*/
 
-	privateKey, err := crypto.HexToECDSA(string(privKeyBytes))
-	if err != nil {
-		return nil, err
-	}
-	publicKey := privateKey.Public()
-	publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		return nil, err
-	}
+	nonce := GetLocalNonce()
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {

@@ -94,6 +94,15 @@ func initDigestHistory() {
 	}
 }
 
+func initNonce() {
+	nonce, err := blockchainconnector.GetBlockchainNonce()
+	if err != nil {
+		fmt.Println(err)
+	}
+	blockchainconnector.NONCE = nonce
+	fmt.Println("+ Initial nonce:", blockchainconnector.NONCE)
+}
+
 func PrintBankInfo() {
 	fmt.Println("| Bank Name:", THIS_BANK.Name)
 	fmt.Println("| Bank Address:", THIS_BANK.Address)
