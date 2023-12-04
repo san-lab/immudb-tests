@@ -3,8 +3,8 @@
 #[ink::contract]
 mod hash_store {
     use ink::storage::Mapping;
-    use scale::{Decode, Encode};
     use ink_env::hash;
+    use scale::{Decode, Encode};
 
     pub fn hash_keccak_256(input: &[u8]) -> [u8; 32] {
         let mut output = <hash::Keccak256 as hash::HashOutput>::Type::default();
@@ -12,15 +12,14 @@ mod hash_store {
         output
     }
 
-
     #[derive(Encode, Decode, Debug, Clone)]
     #[cfg_attr(
         feature = "std",
         derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
     )]
     pub struct ChallengeKey {
-        from_bank: [u8; 32],//Hash,
-        to_bank: [u8; 32],  //Hash,
+        from_bank: [u8; 32], //Hash,
+        to_bank: [u8; 32],   //Hash,
         block_number: BlockNumber,
     }
 
@@ -60,10 +59,18 @@ mod hash_store {
     }
 
     #[ink(event)]
-    pub struct HashStored {
+    pub struct ChallengeStored {
         #[ink(topic)]
         challenge_key: ChallengeKey,
         hash: [u8; 32],
+    }
+
+    #[ink(event)]
+    pub struct ChallengeSolved {
+        #[ink(topic)]
+        challenge_key: ChallengeKey,
+        hash: [u8; 32],
+        block_number: BlockNumber,
     }
 
     impl HashStorage {
@@ -76,7 +83,12 @@ mod hash_store {
         }
 
         #[ink(message)]
-        pub fn storage_challenge(&mut self, from_bank: [u8; 32], to_bank: [u8; 32], hash: [u8; 32]) {
+        pub fn storage_challenge(
+            &mut self,
+            from_bank: [u8; 32],
+            to_bank: [u8; 32],
+            hash: [u8; 32],
+        ) {
             // Get the current block number
             let current_block_number = self.env().block_number();
 
@@ -87,7 +99,7 @@ mod hash_store {
             self.hash_map.insert(key.clone(), &challenge);
 
             // Emit an event for the stored hash
-            self.env().emit_event(HashStored {
+            self.env().emit_event(ChallengeStored {
                 challenge_key: key,
                 hash,
             });
@@ -100,8 +112,6 @@ mod hash_store {
             to_bank: [u8; 32],
             block_number: BlockNumber,
         ) -> Challenge {
-
-           
             // Retrieve the hash from the mapping
             let key = ChallengeKey::new(from_bank, to_bank, block_number);
             let c = self.hash_map.get(&key).expect("None found");
@@ -122,9 +132,15 @@ mod hash_store {
             let result = hash_keccak_256(&preimage);
             let solved = result == h;
             if solved {
-                  self.hash_map.insert(key, &Challenge::new(h, solved));
+                self.hash_map
+                    .insert(key.clone(), &Challenge::new(h, solved));
+                self.env().emit_event(ChallengeSolved {
+                    challenge_key: key,
+                    hash: h,
+                    block_number: self.env().block_number(),
+                });
             }
-          
+
             solved
         }
     }
