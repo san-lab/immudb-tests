@@ -53,3 +53,20 @@ ReferenceBlockNumber int
 
 #### Complete proccess diagram
 ![picture of the complete process](demo_bank_reconciliation.png)
+
+---
+
+### Current Deployment
+
+In the current deployment, we are using the new Ethereum test network, [Holesky](https://holesky.etherscan.io/). Our verifier [contract](https://github.com/san-lab/immudb-tests/blockchainconnector/onchainverifier.sol) is deployed in the blockchain address `0x5a0F1c0A4482a6CE88C190dE396d154A2149544a`. The transaction related to the contract can be inspected with the public blockchain [explorer](https://holesky.etherscan.io/) ([Link to contract](https://holesky.etherscan.io/address/0x5a0F1c0A4482a6CE88C190dE396d154A2149544a)).
+
+The sample bank blockchain addresses are the following:
+
+Bank  | Address
+------------- | -------------
+Santa Bank | [0x7eC027cF7f470983030167d2FACE94745E1AFfE3](https://holesky.etherscan.io/address/0x7eC027cF7f470983030167d2FACE94745E1AFfE3)
+Blue Bank | [0x6e7786c888Fe08E9360E830bC5806eca6186fB89](https://holesky.etherscan.io/address/0x6e7786c888Fe08E9360E830bC5806eca6186fB89)
+Green Bank | [0x3e2a6b7E74447bC16c10E1a5E5da7D1af5e5c2e3](https://holesky.etherscan.io/address/0x3e2a6b7E74447bC16c10E1a5E5da7D1af5e5c2e3)
+
+These account have been prefunded with some Ethereum test tokens for the network gas fees. The corresponding private keys are configured in the deployed environment.
+
