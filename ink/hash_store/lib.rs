@@ -4,6 +4,7 @@
 mod hash_store {
     use ink::storage::Mapping;
     use ink_env::hash;
+    use ink::prelude::vec::Vec;
     use scale::{Decode, Encode};
 
     pub fn hash_keccak_256(input: &[u8]) -> [u8; 32] {
@@ -17,6 +18,7 @@ mod hash_store {
         feature = "std",
         derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
     )]
+
     pub struct ChallengeKey {
         from_bank: [u8; 32], //Hash,
         to_bank: [u8; 32],   //Hash,
@@ -56,6 +58,8 @@ mod hash_store {
     pub struct HashStorage {
         // Mapping to store hash based on block number
         hash_map: Mapping<ChallengeKey, Challenge>,
+        // Keep track of keys for iteration
+        keys: Vec<ChallengeKey>,
     }
 
     #[ink(event)]
@@ -77,8 +81,10 @@ mod hash_store {
         #[ink(constructor)]
         pub fn new() -> Self {
             let nhash_map = Mapping::new();
+            let nkeys = Vec::new();
             Self {
                 hash_map: nhash_map,
+                keys: nkeys,
             }
         }
 
@@ -98,6 +104,9 @@ mod hash_store {
             // Store the hash in the mapping
             self.hash_map.insert(key.clone(), &challenge);
 
+            // Update the keys for iteration
+            self.keys.push(key.clone());
+
             // Emit an event for the stored hash
             self.env().emit_event(ChallengeStored {
                 challenge_key: key,
@@ -116,6 +125,24 @@ mod hash_store {
             let key = ChallengeKey::new(from_bank, to_bank, block_number);
             let c = self.hash_map.get(&key).expect("None found");
             c
+        }
+
+        #[ink(message)]
+        pub fn get_pending_challenges(&self) -> Vec<(ChallengeKey, Challenge)> {
+            let mut pending_challenges = Vec::new();
+
+            // Iterate over the stored keys
+            for key in self.keys.iter() {
+                // Retrieve the challenge using the key
+                let challenge = self.hash_map.get(key).expect("Challenge not found");
+
+                // Check if the challenge is still pending
+                if !challenge.solved {
+                    pending_challenges.push((key.clone(), challenge.clone()));
+                }
+            }
+
+            pending_challenges
         }
 
         #[ink(message)]

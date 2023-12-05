@@ -51,6 +51,6 @@ func main() {
 	// done <- true
 }
 
-// TODO include blocknumber in message (maybe within a mutex between hash submisison and hash retrieval)
+// TODO use events and keep pendingSubmissions method as backup plan
 
 // TODO add previous submission blocknumber to keep submitting blocks (privacy purposes)

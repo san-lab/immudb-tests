@@ -16,7 +16,9 @@ import (
 	. "github.com/san-lab/immudb-tests/datastructs"
 )
 
-var mu sync.Mutex
+var nonceMutex sync.Mutex
+var blockNumberMutex sync.Mutex
+
 var TIMEOUT = 30
 var NONCE int
 
@@ -106,8 +108,14 @@ func GetPendingSubmissions(originatorBank string) ([]*big.Int, error) {
 }
 
 func SubmitHash(recipientBank string, hash string) error {
-	//mu.Lock()
-	//fmt.Println("debug hash lock")
+	/*
+		fmt.Println("debug hash lock")
+		blockNumberMutex.Lock()
+
+		defer fmt.Println("debug hash unlock")
+		defer blockNumberMutex.Unlock()
+	*/
+
 	client, err := ethclient.Dial(NETWORK)
 	if err != nil {
 		return err
@@ -159,14 +167,17 @@ func SubmitHash(recipientBank string, hash string) error {
 			}
 		}
 	*/
-	// fmt.Println("debug hash unlock")
-	// mu.Unlock()
 	return err
 }
 
 func SubmitPreimage(originatorBank string, preimage string, blockNumber *big.Int) error {
-	// mu.Lock()
-	// fmt.Println("debug preimage lock")
+	/*
+		fmt.Println("debug preimage lock")
+		blockNumberMutex.Lock()
+
+		defer fmt.Println("debug preimage unlock")
+		defer blockNumberMutex.Unlock()
+	*/
 	client, err := ethclient.Dial(NETWORK)
 	if err != nil {
 		return err
@@ -218,21 +229,32 @@ func SubmitPreimage(originatorBank string, preimage string, blockNumber *big.Int
 			}
 		}
 	*/
-	// fmt.Println("debug preimage unlock")
-	// mu.Unlock()
 	return err
 }
 
 func handleNonceError() {
 	// TODO: Handle nonce recovery properly
+	// Need mutex to prevent method calling getLocalNonce while it is being updated heres
+	fmt.Println("debug nonce error waiting lock...")
+	nonceMutex.Lock()
+
+	defer fmt.Println("debug nonce error unlocked.")
+	defer nonceMutex.Unlock()
+
 	nonce, err := GetBlockchainNonce()
 	if err != nil {
 		fmt.Println(err)
 	}
-	NONCE = int(nonce)
+	NONCE = nonce
 }
 
 func GetBlockNumber() (int, error) {
+	fmt.Println("debug getBlockNumber lock")
+	blockNumberMutex.Lock()
+
+	defer fmt.Println("debug getBlockNumber unlock")
+	defer blockNumberMutex.Unlock()
+
 	client, err := ethclient.Dial(NETWORK)
 	if err != nil {
 		return 0, err
@@ -263,12 +285,12 @@ func Version() (string, error) {
 }
 
 // Optimistic approach
-func GetLocalNonce() int {
+func GetAndIncreaseLocalNonce() int {
 	fmt.Println("debug waiting lock...")
-	mu.Lock()
+	nonceMutex.Lock()
 
 	defer fmt.Println("debug unlocked.")
-	defer mu.Unlock()
+	defer nonceMutex.Unlock()
 
 	currentNonce := NONCE
 	NONCE = NONCE + 1
@@ -311,7 +333,7 @@ func getAuth(client *ethclient.Client) (*bind.TransactOpts, error) {
 		}
 	*/
 
-	nonce := GetLocalNonce()
+	nonce := GetAndIncreaseLocalNonce()
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {

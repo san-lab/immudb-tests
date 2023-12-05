@@ -45,6 +45,8 @@ type MT103Message struct {
 	OrderingCustomer    string // Sender IBAN
 	BeneficiaryCustomer string // Recipient IBAN
 	Amount              string
+
+	ReferenceBlockNumber int
 }
 
 // Refill CA account
@@ -58,6 +60,8 @@ type RefillCAMessage struct {
 	OrderingInstitution    string
 	BeneficiaryInstitution string
 	Amount                 string
+
+	ReferenceBlockNumber int
 }
 
 // CABank -> BlockNumber -> digest
@@ -85,6 +89,11 @@ func RequestInterBankTx(userFrom, amount, userTo, bankTo string) error {
 		return errors.New("not enough balance at correspondent account")
 	}
 
+	refBlockNumber, err := blockchainconnector.GetBlockNumber()
+	fmt.Println("debug interbank tx refBlkNumber", refBlockNumber)
+	if err != nil {
+		return err
+	}
 	// Send event to the topic and store it in MsgsDB
 	txmsg := &MT103Message{
 		TimeIndication:         time.Now().String(),
@@ -92,7 +101,9 @@ func RequestInterBankTx(userFrom, amount, userTo, bankTo string) error {
 		OrderingCustomer:       userFrom,
 		BeneficiaryInstitution: bankTo,
 		BeneficiaryCustomer:    userTo,
-		Amount:                 amount}
+		Amount:                 amount,
+		ReferenceBlockNumber:   refBlockNumber,
+	}
 	bytes, err := json.Marshal(txmsg)
 	if err != nil {
 		return err
@@ -150,7 +161,7 @@ func ProcessInterBankTx(txmsg *MT103Message) error {
 	LIBP2P_NODE.SendMessage(MT103_CONFIRMATION, txmsg.OrderingInstitution, bytes)
 	fmt.Println("debug tx received", txmsg)
 
-	err = updateCADigestHistory(txmsg.OrderingInstitution)
+	err = updateCADigestHistory(txmsg.OrderingInstitution, txmsg.ReferenceBlockNumber)
 	return err
 }
 
@@ -216,12 +227,18 @@ func ProcessRefillCA(refillMsg *RefillCAMessage) error {
 */
 
 func RequestRefillCA(amount, bankTo string) error {
+	refBlockNumber, err := blockchainconnector.GetBlockNumber()
+	fmt.Println("debug refill ca refBlkNumber", refBlockNumber)
+	if err != nil {
+		return err
+	}
 	txmsg := &RefillCAMessage{
 		TimeIndication:         time.Now().String(),
 		OrderingInstitution:    THIS_BANK.Name,
 		BeneficiaryInstitution: bankTo,
-		Amount:                 amount}
-
+		Amount:                 amount,
+		ReferenceBlockNumber:   refBlockNumber,
+	}
 	bytes, err := json.Marshal(txmsg)
 	if err != nil {
 		return err
@@ -251,7 +268,7 @@ func ProcessRefillCA(refillMsg *RefillCAMessage) error {
 	LIBP2P_NODE.SendMessage(REFILL_CA_CONFIRMATION, refillMsg.OrderingInstitution, bytes)
 	fmt.Println("debug refill received", refillMsg)
 
-	err = updateCADigestHistory(refillMsg.OrderingInstitution)
+	err = updateCADigestHistory(refillMsg.OrderingInstitution, refillMsg.ReferenceBlockNumber)
 	return err
 }
 

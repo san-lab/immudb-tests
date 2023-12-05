@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/san-lab/immudb-tests/account"
-	"github.com/san-lab/immudb-tests/blockchainconnector"
 	"github.com/san-lab/immudb-tests/color"
 	. "github.com/san-lab/immudb-tests/datastructs"
 	sdk "github.com/san-lab/immudb-tests/immudbsdk"
@@ -90,17 +89,19 @@ func validRefillCAConfirmation(refillMsg *RefillCAMessage) bool {
 	return true
 }
 
-func updateCADigestHistory(cABank string) error {
+func updateCADigestHistory(cABank string, refBlockNumber int) error {
 	// Find out what blockNumber this new state belongs to
-	blockNumber, err := blockchainconnector.GetBlockNumber()
-	if err != nil {
-		return err
-	}
+	/*
+		blockNumber, err := blockchainconnector.GetBlockNumber()
+		if err != nil {
+			return err
+		}
+	*/
 	digest, err := account.GetAccountDigest(account.CAAccountIBAN(cABank))
 	if err != nil {
 		return err
 	}
-	DigestHistory[cABank][blockNumber] = digest
+	DigestHistory[cABank][refBlockNumber] = digest
 	return nil
 }
 
