@@ -1,8 +1,8 @@
 # How it works - Comprehensive explanation
 
-Running the program launches an instance of a "bank". It is a simple command line program, and the diagnostic output is simply printed out on the console. Color coding is used to disitinguish between different pieces of information.
+Running the program launches an instance of a "bank". It is a simple command line program, and the diagnostic output is simply printed out on the console. User can issue commands through the interactive prompt interface to create and manage accounts, send transactions between different customers, etc. Color coding is used to disitinguish between different pieces of information.
 
-A bank has a database holding its clients accounts. An account is defined by the following fields:
+Each bank has a database holding its customer accounts. An account is defined by the following fields:
 
 ```
 Iban      string
@@ -21,9 +21,11 @@ It is important that the state of these special accounts is kept in sync among d
 
 More specifically, a bank hashes the state of the mirror of its Correspondent Account at other bank. This outputs a digest that does not reveal information about the state itself. Then it hashes the digest, and submits it as a challenge to the network. Its peer bank is expected to submit the preimage of this challenge, something that can only be accomplished by having performed the same calculations as the original bank, given the 1-way nature of hash functions.
 
-TODO link to exercise on hashing: play with hashing...
+> **Note:** the reader not familiarized with hash functions might want to play with some online tool like [Keccak256 Hash Online](https://emn178.github.io/online-tools/keccak_256.html). For every input, a different, constant-size, randomly-looking string is outputted (often called *digest*). It is unfeasible to come up with an input that hashes to a provided output.
 
 ![picture of challenge - response](challenge_response.png)
+
+This periodic polling and submitting information to blockchain is shown in white and light blue color logs in the program.
 
 ### Intra-bank transaction
 Intra-bank transactions move assets from one client account to another within the same bank, thus not having to interact with different banks.
@@ -49,3 +51,5 @@ Amount              string
 ReferenceBlockNumber int
 ```
 
+#### Complete proccess diagram
+![picture of the complete process](demo_bank_reconciliation.png)
