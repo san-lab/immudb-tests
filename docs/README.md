@@ -31,7 +31,7 @@ This periodic polling and submitting information to blockchain is shown in white
 Intra-bank transactions move assets from one client account to another within the same bank, thus not having to interact with different banks.
 
 ### Inter-bank transaction
-Inter-bank transactions move assets between client accounts at different banks. This requires the originator bank to send an off-chain message to the recipient bank. The recipient bank transfers the requested amount from sending bank Correspondent Account to the final destination customer (this is an internal transfer). The recipient bank sends a confirmation of this operation. Upon receiving the confirmation the originator bank updates its mirror account accordignly.
+Inter-bank transactions move assets between client accounts at different banks. This requires the originator bank to send an off-chain message to the recipient bank. The recipient bank transfers the requested amount from sending bank Correspondent Account to the final destination customer (this is an internal transfer). The recipient bank sends a confirmation of this operation. Upon receiving the confirmation the originator bank updates its mirror account accordingly.
 
 The format of the Inter-bank transaction message is similar to Swift message MT103:
 ```
