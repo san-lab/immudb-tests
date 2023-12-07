@@ -21,19 +21,24 @@ For some reason, the web server still points to the first instance...
 
 Config files must have the following data:
 ```
-BANK_NAME
-BANK_ADDRESS
+BANK_NAME        string
+BANK_ADDRESS     string
 
-DB_IP
-DB_PORT
+DB_IP            string
+DB_PORT          int
 
-LIBP2P_TOPIC 
-API_PORT
+LIBP2P_TOPIC     string
+API_PORT         int
 
-NETWORK
-CHAIN_ID
-VERIFIER_ADDRESS
-PRIV_KEY_FILE
+NETWORK          string
+CHAIN_ID         string
+VERIFIER_ADDRESS string
+PRIV_KEY_FILE    string
+
+UPDATE_FREQUENCY int
+POLL_FREQUENCY   int
+
+FIND_FREQUENCY   int
 ```
 
 Sample:
@@ -51,6 +56,11 @@ NETWORK="http://localhost:7545"
 CHAIN_ID="5777"
 VERIFIER_ADDRESS="0xff330b4c20d04602f2e522354a1e1d2c91835a7f"
 PRIV_KEY_FILE="config/priv_key.txt"
+
+UPDATE_FREQUENCY=60
+POLL_FREQUENCY=25
+
+FIND_FREQUENCY=20
 ```
 Private key must be hex encoded, **without** *"0x"* character **nor** quotation marks.
 

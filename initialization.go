@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/codenotary/immudb/pkg/api/schema"
 	"github.com/codenotary/immudb/pkg/client"
@@ -17,10 +18,15 @@ import (
 
 var FIRST_BLOCK_NUMBER int
 
-func initDB(ip string, port int) {
+var DB_IP string
+var DB_PORT int
+
+var FIND_FREQUENCY int
+
+func initDB() {
 	// even though the server address and port are defaults, setting them as a reference
-	opts := client.DefaultOptions().WithAddress(ip).WithPort(port)
-	opts2 := client.DefaultOptions().WithAddress(ip).WithPort(port)
+	opts := client.DefaultOptions().WithAddress(DB_IP).WithPort(DB_PORT)
+	opts2 := client.DefaultOptions().WithAddress(DB_IP).WithPort(DB_PORT)
 
 	c := client.NewClient().WithOptions(opts)
 	c2 := client.NewClient().WithOptions(opts2)
@@ -62,7 +68,7 @@ func initConfigParams() {
 	COUNTERPART_BANKS[THIS_BANK.Name] = THIS_BANK.Address
 
 	blockchainconnector.NETWORK = viper.GetString("NETWORK")
-	blockchainconnector.CHAIN_ID = viper.GetString("CHAIN_ID")
+	blockchainconnector.CHAIN_ID = viper.GetString("CHAIN_ID") // may not be needed anymore...
 	blockchainconnector.VERIFIER_ADDRESS = viper.GetString("VERIFIER_ADDRESS")
 	blockchainconnector.PRIV_KEY_FILE = viper.GetString("PRIV_KEY_FILE")
 
@@ -73,6 +79,11 @@ func initConfigParams() {
 
 	DB_IP = viper.GetString("DB_IP")
 	DB_PORT = viper.GetInt("DB_PORT")
+
+	UPDATE_FREQUENCY = viper.GetInt("UPDATE_FREQUENCY")
+	POLL_FREQUENCY = viper.GetInt("POLL_FREQUENCY")
+
+	FIND_FREQUENCY = viper.GetInt("FIND_FREQUENCY")
 }
 
 // Initialize digest history
@@ -101,6 +112,35 @@ func initNonce() {
 	}
 	blockchainconnector.NONCE = nonce
 	fmt.Println("+ Initial nonce:", blockchainconnector.NONCE)
+}
+
+func periodicallyFindCounterpartBanks(done chan (bool)) {
+	// Try at least once on initialization
+	time.Sleep(2 * time.Second)
+	err := bankinterop.FindCounterpartBanks()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if FIND_FREQUENCY == 0 {
+		return
+	}
+
+	ticker := time.NewTicker(time.Duration(FIND_FREQUENCY) * time.Second)
+	for {
+		select {
+		case <-done:
+			return
+
+		case t := <-ticker.C:
+			// fmt.Println("debug find counterparties", t)
+			_ = t
+			err := bankinterop.FindCounterpartBanks()
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+	}
 }
 
 func PrintBankInfo() {

@@ -90,7 +90,7 @@ func RequestInterBankTx(userFrom, amount, userTo, bankTo string) error {
 	}
 
 	refBlockNumber, err := blockchainconnector.GetBlockNumber()
-	fmt.Println("debug interbank tx refBlkNumber", refBlockNumber)
+	// fmt.Println("debug interbank tx refBlkNumber", refBlockNumber)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func RequestInterBankTx(userFrom, amount, userTo, bankTo string) error {
 		return err
 	}
 	LIBP2P_NODE.SendMessage(MT103_MESSAGE, bankTo, bytes)
-	fmt.Println("debug tx sent", txmsg)
+	// fmt.Println("debug tx sent", txmsg)
 	/*
 		hash, err := StoreInMsgsDB(txmsg)
 		if err != nil {
@@ -159,7 +159,7 @@ func ProcessInterBankTx(txmsg *MT103Message) error {
 		return err
 	}
 	LIBP2P_NODE.SendMessage(MT103_CONFIRMATION, txmsg.OrderingInstitution, bytes)
-	fmt.Println("debug tx received", txmsg)
+	// fmt.Println("debug tx received", txmsg)
 
 	err = updateCADigestHistory(txmsg.OrderingInstitution, txmsg.ReferenceBlockNumber)
 	return err
@@ -169,7 +169,7 @@ func ConfirmedInterBankTx(txmsg *MT103Message) error {
 	if !validInterBankTxConfirmation(txmsg) {
 		return errors.New("received transaction message is invalid or not addressed to us")
 	}
-	fmt.Println("debug tx confirmation", txmsg)
+	// fmt.Println("debug tx confirmation", txmsg)
 
 	hash, err := StoreInMsgsDB(txmsg)
 	if err != nil {
@@ -245,7 +245,7 @@ func RequestRefillCA(amount, bankTo string) error {
 	}
 	LIBP2P_NODE.SendMessage(REFILL_CA_MESSAGE, bankTo, bytes)
 	fmt.Printf("Sent refill CA request to %s (%s)\n", bankTo, amount)
-	fmt.Println("debug refill sent", txmsg)
+	// fmt.Println("debug refill sent", txmsg)
 	return nil
 }
 
@@ -266,7 +266,7 @@ func ProcessRefillCA(refillMsg *RefillCAMessage) error {
 		return err
 	}
 	LIBP2P_NODE.SendMessage(REFILL_CA_CONFIRMATION, refillMsg.OrderingInstitution, bytes)
-	fmt.Println("debug refill received", refillMsg)
+	// fmt.Println("debug refill received", refillMsg)
 
 	err = updateCADigestHistory(refillMsg.OrderingInstitution, refillMsg.ReferenceBlockNumber)
 	return err
@@ -276,7 +276,7 @@ func ConfirmedRefillCA(refillMsg *RefillCAMessage) error {
 	if !validRefillCAConfirmation(refillMsg) {
 		return errors.New("received refill confirmation message is invalid or not addressed to us")
 	}
-	fmt.Println("debug refill confirmation", refillMsg)
+	// fmt.Println("debug refill confirmation", refillMsg)
 	err := account.DepositToAccount(account.MirrorAccountIBAN(refillMsg.BeneficiaryInstitution), refillMsg.Amount)
 	return err
 }

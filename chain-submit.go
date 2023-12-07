@@ -13,13 +13,16 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
-const UPDATE_FREQUENCY = 60
-const POLL_FREQUENCY = 25
 const ONLY_ON_CHANGES = true
 
+var UPDATE_FREQUENCY int
+var POLL_FREQUENCY int
+
 // TODO: properly handle nonce ¿?
-func periodicallySubmitHash(done chan bool, ticker *time.Ticker) {
+func periodicallySubmitHash(done chan bool) {
+	ticker := time.NewTicker(time.Duration(UPDATE_FREQUENCY) * time.Second)
 	previousDigest := make(map[string]string)
+
 	for {
 		select {
 		case <-done:
@@ -60,7 +63,9 @@ func periodicallySubmitHash(done chan bool, ticker *time.Ticker) {
 }
 
 // TODO: handle more than one pending submission properly
-func periodicallyPollAndSubmitPreImage(done chan bool, ticker *time.Ticker) {
+func periodicallyPollAndSubmitPreImage(done chan bool) {
+	ticker := time.NewTicker(time.Duration(POLL_FREQUENCY) * time.Second)
+
 	for {
 		select {
 		case <-done:
@@ -72,7 +77,6 @@ func periodicallyPollAndSubmitPreImage(done chan bool, ticker *time.Ticker) {
 			for _, CAAccount := range CAAccounts {
 				color.CPrintln(color.WHITE, "--- Checking CA %s", CAAccount.Holder)
 				originatorBankAddress := COUNTERPART_BANKS[CAAccount.CABank]
-				//TODO: right now they need to discover each other, could instead save address.....
 				pending, err := blockchainconnector.GetPendingSubmissions(originatorBankAddress)
 				if err != nil {
 					fmt.Println(err)
@@ -91,7 +95,7 @@ func periodicallyPollAndSubmitPreImage(done chan bool, ticker *time.Ticker) {
 					color.CPrintln(color.WHITE, "- %d -> %s", k, color.Shorten(v, 10))
 				}
 
-				digest, err := bankinterop.PickLatestDigestPriorToResquestedBlockNumber(CAAccount.CABank, pending[len(pending)-1]) //CAAccount.GetDigest()
+				digest, err := bankinterop.PickLatestDigestPriorToResquestedBlockNumber(CAAccount.CABank, pending[len(pending)-1])
 				if err != nil {
 					fmt.Println(err)
 					continue

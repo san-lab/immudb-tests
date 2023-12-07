@@ -17,9 +17,10 @@ import (
 )
 
 var nonceMutex sync.Mutex
-var blockNumberMutex sync.Mutex
 
-var TIMEOUT = 30
+// var blockNumberMutex sync.Mutex
+
+// var TIMEOUT = 30
 var NONCE int
 
 var NETWORK string
@@ -142,8 +143,8 @@ func SubmitHash(recipientBank string, hash string) error {
 		return err
 	}
 	_, err = instance.SubmitHash(auth, originatorBankAddress, recipientBankAddress, [32]byte(hashBytes))
-	fmt.Println("debug submit hash error?", err)
 	if err != nil { // TODO: check for the appropriate error
+		fmt.Println("debug submit hash error?", err)
 		handleNonceError()
 	}
 	// Poll for receipt (when nonce is updated) until TIMEOUT
@@ -204,8 +205,8 @@ func SubmitPreimage(originatorBank string, preimage string, blockNumber *big.Int
 		return err
 	}
 	_, err = instance.SubmitPreimage(auth, originatorBankAddress, recipientBankAddress, [32]byte(preimageBytes), blockNumber)
-	fmt.Println("debug submit preimage error?", err)
 	if err != nil { // TODO: check for the appropriate error
+		fmt.Println("debug submit preimage error?", err)
 		handleNonceError()
 	}
 	// Poll for receipt (when nonce is updated) until TIMEOUT
@@ -234,11 +235,11 @@ func SubmitPreimage(originatorBank string, preimage string, blockNumber *big.Int
 
 func handleNonceError() {
 	// TODO: Handle nonce recovery properly
-	// Need mutex to prevent method calling getLocalNonce while it is being updated heres
-	fmt.Println("debug nonce error waiting lock...")
+	// Need mutex to prevent method calling getLocalNonce while it is being updated here
+	// fmt.Println("debug nonce error waiting lock...")
 	nonceMutex.Lock()
 
-	defer fmt.Println("debug nonce error unlocked.")
+	// defer fmt.Println("debug nonce error unlocked.")
 	defer nonceMutex.Unlock()
 
 	nonce, err := GetBlockchainNonce()
@@ -249,11 +250,11 @@ func handleNonceError() {
 }
 
 func GetBlockNumber() (int, error) {
-	fmt.Println("debug getBlockNumber lock")
-	blockNumberMutex.Lock()
+	// fmt.Println("debug getBlockNumber lock")
+	// blockNumberMutex.Lock()
 
-	defer fmt.Println("debug getBlockNumber unlock")
-	defer blockNumberMutex.Unlock()
+	// defer fmt.Println("debug getBlockNumber unlock")
+	// defer blockNumberMutex.Unlock()
 
 	client, err := ethclient.Dial(NETWORK)
 	if err != nil {
@@ -286,15 +287,15 @@ func Version() (string, error) {
 
 // Optimistic approach
 func GetAndIncreaseLocalNonce() int {
-	fmt.Println("debug waiting lock...")
+	// fmt.Println("debug waiting lock...")
 	nonceMutex.Lock()
 
-	defer fmt.Println("debug unlocked.")
+	// defer fmt.Println("debug unlocked.")
 	defer nonceMutex.Unlock()
 
 	currentNonce := NONCE
 	NONCE = NONCE + 1
-	fmt.Println("debug nonce", currentNonce)
+	// fmt.Println("debug nonce", currentNonce)
 	return currentNonce
 }
 

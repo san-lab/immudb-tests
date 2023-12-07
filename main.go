@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"time"
 
 	. "github.com/san-lab/immudb-tests/datastructs"
 )
@@ -10,15 +9,12 @@ import (
 const STATE_DB = "defaultdb"
 const MSGS_DB = "msgdb"
 
-var DB_IP string
-var DB_PORT int
-
 func main() {
 	// Parse all config parameters
 	initConfigParams()
 
 	// Initialize DBs
-	initDB(DB_IP, DB_PORT)
+	initDB()
 
 	// Initialize digest history of onboarded CA banks
 	initDigestHistory()
@@ -31,17 +27,18 @@ func main() {
 	defer MSGS_CLIENT.CloseSession(context.Background())
 
 	// Go routines that interact with blockchain
-
-	ticker := time.NewTicker(UPDATE_FREQUENCY * time.Second)
 	done := make(chan bool)
-	go periodicallySubmitHash(done, ticker)
+	go periodicallySubmitHash(done)
 
-	ticker2 := time.NewTicker(POLL_FREQUENCY * time.Second)
 	done2 := make(chan bool)
-	go periodicallyPollAndSubmitPreImage(done2, ticker2)
+	go periodicallyPollAndSubmitPreImage(done2)
 
 	// HTTP server
 	go startApiServer()
+
+	// Automatically send broadcast message to find other libp2p banks
+	done3 := make(chan bool)
+	go periodicallyFindCounterpartBanks(done3)
 
 	// PromptUI to select action
 	TopUI()
@@ -52,5 +49,5 @@ func main() {
 }
 
 // TODO use events and keep pendingSubmissions method as backup plan
-
+// TODO refactor optimistic nonce update to have cleaner code
 // TODO add previous submission blocknumber to keep submitting blocks (privacy purposes)
