@@ -13,10 +13,12 @@ func main() {
 	// Parse all config parameters
 	initConfigParams()
 
-	// Initialize DBs
+	f := initLogger()
+	defer f.Close()
+
 	initDB()
 
-	// Initialize digest history of onboarded CA banks
+	// Initialize digest history of already onboarded CA banks
 	initDigestHistory()
 
 	// Get initial nonce

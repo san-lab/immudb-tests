@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/codenotary/immudb/pkg/api/schema"
@@ -22,6 +23,20 @@ var DB_IP string
 var DB_PORT int
 
 var FIND_FREQUENCY int
+
+var LOG_FILE string
+
+func initLogger() *os.File {
+	f, err := os.OpenFile(LOG_FILE, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	log.SetOutput(f)
+	log.SetPrefix("")
+	log.SetFlags(0)
+	return f
+}
 
 func initDB() {
 	// even though the server address and port are defaults, setting them as a reference
@@ -84,6 +99,8 @@ func initConfigParams() {
 	POLL_FREQUENCY = viper.GetInt("POLL_FREQUENCY")
 
 	FIND_FREQUENCY = viper.GetInt("FIND_FREQUENCY")
+
+	LOG_FILE = viper.GetString("LOG_FILE")
 }
 
 // Initialize digest history
