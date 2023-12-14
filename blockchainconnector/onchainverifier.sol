@@ -2,6 +2,10 @@
 pragma solidity ^0.5.0;
 
 contract HashVerification {
+    event HashSubmitted(address, address, bytes32, uint256);
+    event PreimageSubmitted(address, address, bytes32, uint256, bool);
+
+
     struct StateCheck {
         bytes32 submittedHash;
         bytes32 submittedPreimage;
@@ -63,6 +67,8 @@ contract HashVerification {
                 blockNumber: currentBlock
             })
         );
+
+        emit HashSubmitted(_originatorBank, _recipientBank, _hash, currentBlock);
     }
 
     function submitPreimage(
@@ -74,15 +80,18 @@ contract HashVerification {
 
         StateCheck[] storage senderStateChecks = stateChecks[_originatorBank][_recipientBank];
 
+        bool verifies = false;
         for (uint256 i = 0; i < senderStateChecks.length; i++) {
             if (!senderStateChecks[i].verified && senderStateChecks[i].blockNumber == _blockNumber) {
                 senderStateChecks[i].submittedPreimage = _preimage;
                 senderStateChecks[i].verified =
-                    keccak256(abi.encodePacked(_preimage)) ==
-                    senderStateChecks[i].submittedHash;
+                    keccak256(abi.encodePacked(_preimage)) == senderStateChecks[i].submittedHash;
+                verifies = senderStateChecks[i].verified;
                 break;
             }
         }
+
+        emit PreimageSubmitted(_originatorBank, _recipientBank, _preimage, _blockNumber, verifies);
     }
 
     function getPendingSubmissions(

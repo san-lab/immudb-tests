@@ -42,7 +42,7 @@ func GetStateCheckByBlockNumber(originatorBank, recipientBank string, blockNumbe
 	}
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
-	instance, err := NewOnchainVerifier(address, client)
+	instance, err := NewOnChainVerifier(address, client)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func GetStateCheckByIndex(originatorBank, recipientBank string, index *big.Int) 
 	}
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
-	instance, err := NewOnchainVerifier(address, client)
+	instance, err := NewOnChainVerifier(address, client)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func GetPendingSubmissions(originatorBank string) ([]*big.Int, error) {
 	}
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
-	instance, err := NewOnchainVerifier(address, client)
+	instance, err := NewOnChainVerifier(address, client)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func SubmitHash(recipientBank string, hash string) error {
 	}
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
-	instance, err := NewOnchainVerifier(address, client)
+	instance, err := NewOnChainVerifier(address, client)
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func SubmitPreimage(originatorBank string, preimage string, blockNumber *big.Int
 	}
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
-	instance, err := NewOnchainVerifier(address, client)
+	instance, err := NewOnChainVerifier(address, client)
 	if err != nil {
 		return err
 	}
@@ -276,13 +276,30 @@ func Version() (string, error) {
 	}
 
 	address := common.HexToAddress(VERIFIER_ADDRESS)
-	instance, err := NewOnchainVerifier(address, client)
+	instance, err := NewOnChainVerifier(address, client)
 	if err != nil {
 		return "", err
 	}
 
 	version, err := instance.Version(&bind.CallOpts{})
 	return version, err
+}
+
+func WatchHashSubmittedEvent(sink chan *OnChainVerifierHashSubmitted) error {
+	client, err := ethclient.Dial(NETWORK)
+	if err != nil {
+		return err
+	}
+
+	address := common.HexToAddress(VERIFIER_ADDRESS)
+	instance, err := NewOnChainVerifier(address, client)
+	if err != nil {
+		return err
+	}
+
+	opts := &bind.WatchOpts{}
+	instance.OnChainVerifierFilterer.WatchHashSubmitted(opts, sink)
+	return err
 }
 
 // Optimistic approach

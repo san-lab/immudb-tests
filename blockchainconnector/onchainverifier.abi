@@ -11,15 +11,11 @@
 				"type": "address"
 			},
 			{
-				"name": "_preimage",
+				"name": "_hash",
 				"type": "bytes32"
-			},
-			{
-				"name": "_blockNumber",
-				"type": "uint256"
 			}
 		],
-		"name": "submitPreimage",
+		"name": "submitHash",
 		"outputs": [],
 		"payable": false,
 		"stateMutability": "nonpayable",
@@ -37,24 +33,102 @@
 				"type": "address"
 			},
 			{
-				"name": "_hash",
+				"name": "_preimage",
 				"type": "bytes32"
+			},
+			{
+				"name": "_blockNumber",
+				"type": "uint256"
 			}
 		],
-		"name": "submitHash",
+		"name": "submitPreimage",
 		"outputs": [],
 		"payable": false,
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
-		"constant": true,
 		"inputs": [],
-		"name": "version",
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"name": "",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"name": "",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"name": "",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "HashSubmitted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"name": "",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"name": "",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"name": "",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"name": "PreimageSubmitted",
+		"type": "event"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "_originatorBank",
+				"type": "address"
+			},
+			{
+				"name": "_recipientBank",
+				"type": "address"
+			}
+		],
+		"name": "getPendingSubmissions",
 		"outputs": [
 			{
 				"name": "",
-				"type": "string"
+				"type": "uint256[]"
 			}
 		],
 		"payable": false,
@@ -65,19 +139,19 @@
 		"constant": true,
 		"inputs": [
 			{
-				"name": "",
+				"name": "_originatorBank",
 				"type": "address"
 			},
 			{
-				"name": "",
+				"name": "_recipientBank",
 				"type": "address"
 			},
 			{
-				"name": "",
+				"name": "_blockNumber",
 				"type": "uint256"
 			}
 		],
-		"name": "stateChecks",
+		"name": "getStateCheckByBlockNumber",
 		"outputs": [
 			{
 				"name": "submittedHash",
@@ -143,42 +217,19 @@
 		"constant": true,
 		"inputs": [
 			{
-				"name": "_originatorBank",
+				"name": "",
 				"type": "address"
 			},
-			{
-				"name": "_recipientBank",
-				"type": "address"
-			}
-		],
-		"name": "getPendingSubmissions",
-		"outputs": [
 			{
 				"name": "",
-				"type": "uint256[]"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "_originatorBank",
 				"type": "address"
 			},
 			{
-				"name": "_recipientBank",
-				"type": "address"
-			},
-			{
-				"name": "_blockNumber",
+				"name": "",
 				"type": "uint256"
 			}
 		],
-		"name": "getStateCheckByBlockNumber",
+		"name": "stateChecks",
 		"outputs": [
 			{
 				"name": "submittedHash",
@@ -202,9 +253,17 @@
 		"type": "function"
 	},
 	{
+		"constant": true,
 		"inputs": [],
+		"name": "version",
+		"outputs": [
+			{
+				"name": "",
+				"type": "string"
+			}
+		],
 		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "constructor"
+		"stateMutability": "view",
+		"type": "function"
 	}
 ]

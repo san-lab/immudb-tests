@@ -31,7 +31,8 @@ func main() {
 	go periodicallySubmitHash(done)
 
 	done2 := make(chan bool)
-	go periodicallyPollAndSubmitPreImage(done2)
+	//go periodicallyPollAndSubmitPreImage(done2)
+	go listenForEventsAndSubmitPreImage(done2)
 
 	// HTTP server
 	go startApiServer()

@@ -7,9 +7,9 @@ import (
 
 	"github.com/san-lab/immudb-tests/account"
 	"github.com/san-lab/immudb-tests/bankinterop"
-	"github.com/san-lab/immudb-tests/blockchainconnector"
 	"github.com/san-lab/immudb-tests/color"
 	. "github.com/san-lab/immudb-tests/datastructs"
+	"github.com/san-lab/reconciliation-bank/blockchainconnector"
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
@@ -58,6 +58,23 @@ func periodicallySubmitHash(done chan bool) {
 				}
 				color.CPrintln(color.CYAN, "** Done!")
 			}
+		}
+	}
+}
+
+func listenForEventsAndSubmitPreImage(done chan bool) {
+	sink := make(chan *blockchainconnector.OnChainVerifierHashSubmitted)
+	err := blockchainconnector.WatchHashSubmittedEvent(sink)
+	if err != nil {
+		fmt.Println(err)
+	}
+	for {
+		select {
+		case <-done:
+			return
+
+		case <-sink:
+			fmt.Println("got event, do something")
 		}
 	}
 }
