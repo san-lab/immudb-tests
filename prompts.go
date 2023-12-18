@@ -20,7 +20,7 @@ const bankInfo = "Show bank information"
 const findCounterpartBanks = "Broadcast call to find other banks"
 const seeCounterpartBanks = "See current list of counterpart banks"
 
-const printAllAccounts = "Print all key-values stored"
+const printAllAccounts = "Print all accounts stored"
 const printAccount = "Print all values of an account"
 
 const interBankTx = "Transfer to a client of a different bank"
@@ -38,7 +38,7 @@ const suspendAccount = "Suspend the account"
 const unsuspendAccount = "Unsuspend the account"
 const getAccountDigest = "Get the digest of the account"
 
-const DBOps = "Low level databse operations"
+const DBOps = "Low level database operations"
 const health = "Health"
 const vSet = "VerifiedSet"
 const vGet = "VerifiedGet"
@@ -58,9 +58,9 @@ const getVersion = "getVersion"
 
 func TopUI() {
 	for {
-		items := []string{bankInfo, findCounterpartBanks, seeCounterpartBanks, printAllAccounts, printAccount,
-			intraBankTx, interBankTx, refillCA, currentStateRoot, createAccount, manageAccount, seeMessagesDB,
-			seeMessageByHash, DBOps, onChainOps}
+		items := []string{bankInfo, seeCounterpartBanks, printAllAccounts, printAccount,
+			intraBankTx, interBankTx, refillCA, createAccount, manageAccount, seeMessagesDB,
+			seeMessageByHash, DBOps, currentStateRoot, onChainOps, findCounterpartBanks}
 
 		items = append(items, EXIT)
 		prompt := promptui.Select{
