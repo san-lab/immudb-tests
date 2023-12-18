@@ -39,6 +39,8 @@ UPDATE_FREQUENCY int
 POLL_FREQUENCY   int
 
 FIND_FREQUENCY   int
+
+LOG_FILE         string
 ```
 
 Sample:
@@ -52,8 +54,8 @@ DB_PORT=3322
 LIBP2P_TOPIC="ImmuDBTopic"
 API_PORT=3301
 
-NETWORK="http://localhost:7545"
-CHAIN_ID="5777"
+NETWORK="https://ethereum-holesky.publicnode.com/"
+CHAIN_ID="17000"
 VERIFIER_ADDRESS="0xff330b4c20d04602f2e522354a1e1d2c91835a7f"
 PRIV_KEY_FILE="config/priv_key.txt"
 
@@ -61,6 +63,8 @@ UPDATE_FREQUENCY=60
 POLL_FREQUENCY=25
 
 FIND_FREQUENCY=20
+
+LOG_FILE="chain-logs.txt"
 ```
 Private key must be hex encoded, **without** *"0x"* character **nor** quotation marks.
 

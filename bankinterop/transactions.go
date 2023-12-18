@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
 	"time"
 
@@ -403,7 +404,7 @@ func PickLatestDigestPriorToResquestedBlockNumber(cABank string, blockNumber *bi
 		number = number - 1
 		digest = DigestHistory[cABank][number]
 	}
-	color.CPrintln(color.WHITE, "- Picked digest: %s, %d, %s", cABank, number, color.Shorten(digest, 10))
+	log.Printf("- Picked digest: %s, %d, %s", cABank, number, color.Shorten(digest, 10))
 	if digest == "" {
 		return "", errors.New("couldnt find a digest for the block number requested")
 	}
