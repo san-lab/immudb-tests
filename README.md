@@ -1,4 +1,6 @@
-# How it works - Comprehensive explanation
+# Reconciliation Bank Demo
+
+## How it works - Comprehensive explanation
 
 Running the program launches an instance of a "bank". It is a simple command line program, and the diagnostic output is simply printed out on the console. User can issue commands through the interactive prompt interface to create and manage accounts, send transactions between different customers, etc. Color coding is used to disitinguish between different pieces of information.
 
@@ -70,6 +72,7 @@ Green Bank | [0x3e2a6b7E74447bC16c10E1a5E5da7D1af5e5c2e3](https://holesky.ethers
 
 These account have been prefunded with some Ethereum test tokens for the network gas fees. The corresponding private keys are configured in the deployed environment.
 
+---
 
 # Setup
 
